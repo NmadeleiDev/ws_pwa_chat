@@ -9,10 +9,10 @@
                         <div class="contacts-container">
                             <h4>My chats:</h4>
                             <!--                а вот список контактов потом дополнится не просто список имен, а еще и есть ли непрочитанные сообщения и все в этом роде-->
-                            <p @click="setExistingChat(chatItem)" v-for="chatItem in userData.chats" :key="chatItem.chat_id">{{ chatItem.name }}</p>
+<!--                            <p @click="setExistingChat(chatItem)" v-for="chatItem in userData.chats" :key="chatItem.chat_id">{{ chatItem.name }}</p>-->
                             <div class="chat-item" @click="setExistingChat(chatItem)" v-for="chatItem in userData.chats" :key="chatItem.chat_id">
-<!--                                <h5>{{ chatItem.name }}</h5>-->
-                                <div>{{ chatItem.usernames.filter(item => item !== userData.username).join(", ") }}</div>
+                                <h5>{{ chatItem.name }}</h5>
+<!--                                <div>{{ chatItem.usernames.filter(item => item !== userData.username).join(", ") }}</div>-->
                             </div>
                         </div>
                         <div class="contacts-container">

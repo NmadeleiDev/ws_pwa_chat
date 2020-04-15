@@ -12,6 +12,8 @@ help: ## Show this help
 
 backend-up:
 	cd ./backend && docker-compose up --build -d
+frontend-dep:
+	cd ./frontend && npm install
 frontend-up:
 	cd ./frontend && npm run build
 postgres-up:
@@ -26,6 +28,6 @@ postgres-down:
 mongo-down:
 	cd ./mongo && docker-compose down
 
-up: postgres-up frontend-up mongo-up backend-up
+up: postgres-up frontend-dep frontend-up mongo-up backend-up
 
 down: backend-down postgres-down mongo-down
