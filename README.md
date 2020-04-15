@@ -22,6 +22,7 @@ You also need npm to be able to build static files to nginx static dir (they are
 HOW IT WORKS?
 
 Video demonstration: https://youtu.be/5SXtI_e_0SM
+(Video is also in the root of the repository)
 
 After user signs up or in, websocket connection is established. Server sees him as a client and run 2 sub-processes (goroutines) - one for reading from the connection, one for writeing to connection.
 Client is also subscribed to changes in all of his active chats with mongo's collection.Watch method and change stream.
