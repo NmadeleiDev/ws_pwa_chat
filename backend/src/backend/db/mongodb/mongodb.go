@@ -193,11 +193,11 @@ func CreateChatFromMessage(message structs.Message) (structs.Chat, error) {
 }
 
 
-func ListenChangeStream(messagePoolId string, user structs.User, writeUpdatesChan chan structs.Message) {
+func ListenChangeStream(messagePoolId string, clientExitChan chan byte, writeUpdatesChan chan structs.Message) {
 
 	database := client.Database("chat")
 	collection := database.Collection(messagePoolId)
-	container := UpdatedMessageData{}
+	collectionUpdateChan := make(chan structs.Message)
 
 	matchStage := bson.D{{"$match", bson.D{{"operationType", "insert"}}}}
 	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
@@ -207,20 +207,45 @@ func ListenChangeStream(messagePoolId string, user structs.User, writeUpdatesCha
 		return
 	}
 
+	go func(stream mongo.ChangeStream, updateChan chan structs.Message) {
+		for {
+			if stream.TryNext(context.TODO()) {
+				container := UpdatedMessageData{}
+				if err := stream.Decode(&container); err != nil {
+					log.Error("Error decoding message: ", err)
+				}
+				updateChan <- container.Message
+				continue
+			}
+			// If TryNext returns false, the next change is not yet available, the change stream was closed by the server,
+			// or an error occurred. TryNext should only be called again for the empty batch case.
+			if err := stream.Err(); err != nil {
+				log.Error("Error reading stream: ", err)
+				break
+			}
+			if stream.ID() == 0 {
+				break
+			}
+		}
+	}(*changeStream, collectionUpdateChan)
+
 	defer func() {
 		if err := changeStream.Close(context.TODO()); err != nil {
 			log.Error("error closing change stream: ", err)
 		}
 	}()
 
-	for changeStream.Next(context.TODO()) {
-		err = changeStream.Decode(&container)
-		log.Info("Decoded: ", container, " Error: ", err)
-		if container.Message.Sender != user.Username {
-			writeUpdatesChan <- container.Message
+	for {
+		select {
+		case message := <- collectionUpdateChan:
+			writeUpdatesChan <- message
+		case <- clientExitChan:
+			close(collectionUpdateChan)
+			return
 		}
 	}
 }
+
 func CloseConnection() {
 	if err := client.Disconnect(context.TODO()); err != nil {
 		log.Error("Error disconnect mongo: ", err)

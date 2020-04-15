@@ -11,7 +11,7 @@
                             <!--                а вот список контактов потом дополнится не просто список имен, а еще и есть ли непрочитанные сообщения и все в этом роде-->
                             <p @click="setExistingChat(chatItem)" v-for="chatItem in userData.chats" :key="chatItem.chat_id">{{ chatItem.name }}</p>
                             <div class="chat-item" @click="setExistingChat(chatItem)" v-for="chatItem in userData.chats" :key="chatItem.chat_id">
-                                <h5>{{ chatItem.name }}</h5>
+<!--                                <h5>{{ chatItem.name }}</h5>-->
                                 <div>{{ chatItem.usernames.filter(item => item !== userData.username).join(", ") }}</div>
                             </div>
                         </div>
@@ -92,9 +92,11 @@
                         console.log("Got message: ", evt);
                         let messageBody = JSON.parse(evt.data);
                         console.log("Body: ", messageBody);
-                        that.messages.push(messageBody);
+                        if (messageBody.sender !== that.$store.getters.GET_USER.username) {
+                            that.messages.push(messageBody);
+                        }
                     };
-                    let timerId = setInterval(() => conn.send(JSON.stringify({meta: "pong"})), 20000);
+                    setInterval(() => conn.send(JSON.stringify({meta: "pong"})), 20000);
 
                     return conn;
                 }
