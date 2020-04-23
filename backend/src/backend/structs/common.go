@@ -16,13 +16,14 @@ type Chat struct {
 }
 
 type Message struct {
-	Sender				string		`json:"sender",bson:"sender"`
-	ChatId				string		`json:"chat_id",bson:"chatid"`
-	Date				int			`json:"date",bson:"date"`
-	State				int			`json:"state",bson:"state"`
-	Text				string		`json:"text",bson:"text"`
-	Meta				string		`json:"meta",bson:"meta"`
-	AttachedFilePath	string		`json:"attached_file_path",bson:"attachedfilepath"`
+	Sender				string		`json:"sender" bson:"sender"`
+	ChatId				string		`json:"chat_id" bson:"chatid"`
+	IsRead				bool		`json:"is_read" bson:"isread"`
+	Date				int			`json:"date" bson:"date"`
+	State				int			`json:"state" bson:"state"`
+	Text				string		`json:"text" bson:"text"`
+	Meta				string		`json:"meta" bson:"meta"`
+	AttachedFilePath	string		`json:"attached_file_path" bson:"attachedfilepath"`
 }
 
 type ResponseJson struct {

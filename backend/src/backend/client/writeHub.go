@@ -44,6 +44,9 @@ func	(client *Client) WriteHub() {
 				log.Error("Error writing message to ws: ", err)
 				return
 			}
+			if err = w.Close(); err != nil {
+				log.Error("Error closing writer: ", err)
+			}
 			log.Info("Message is sent.")
 		case <-ticker.C:
 			err := client.Connection.SetWriteDeadline(time.Now().Add(writeWait))
