@@ -1,6 +1,6 @@
 <template>
     <b-container>
-        <b-sidebar id="sidebar-1" no-header shadow>
+        <b-sidebar id="sidebar-1" no-header shadow backdrop>
             <template v-slot:default="{ hide }">
             <b-container>
                 <b-row class="m-3 mt-5">
@@ -70,8 +70,8 @@
                 </div>
             </b-col>
         </b-row>
-        <b-row>
-            <b-col>
+        <b-row align-content="center">
+            <b-col align-self="center">
                 <div class="input-container w-75 m-auto">
                     <b-input-group>
                         <b-input class="message-input" placeholder="Введите сообщение..." type="text" v-model="messageText"></b-input>
