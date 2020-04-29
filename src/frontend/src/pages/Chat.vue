@@ -1,7 +1,6 @@
 <template>
     <b-container>
-        <b-sidebar id="sidebar-1" no-header shadow backdrop>
-            <template v-slot:default="{ hide }">
+        <b-sidebar id="sidebar-1" title="Chats" shadow backdrop>
             <b-container>
                 <b-row class="m-3 mt-5">
                     <b-col cols="4">
@@ -43,7 +42,6 @@
                     </b-col>
                 </b-row>
             </b-container>
-            </template>
             <template v-slot:footer="{ hide }">
                 <div class="d-flex bg-dark text-light justify-content-around align-items-center px-3 py-2">
                     <b-button variant="outline-warning" @click="signOut">Выйти</b-button>
