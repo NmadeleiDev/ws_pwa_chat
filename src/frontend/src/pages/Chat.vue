@@ -72,7 +72,7 @@
         </b-row>
         <b-row>
             <b-col>
-                <div class="input-container w-75">
+                <div class="input-container w-75 m-auto">
                     <b-input-group>
                         <b-input class="message-input" placeholder="Введите сообщение..." type="text" v-model="messageText"></b-input>
                         <b-input-group-append>
