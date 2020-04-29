@@ -42,15 +42,13 @@
                         </b-collapse>
                     </b-col>
                 </b-row>
-                <b-row class="fixed-bottom pb-3">
-                    <b-col>
-                        <b-button-group>
-                            <b-button variant="primary" @click="hide">Закрыть</b-button>
-                            <b-button variant="outline-warning" @click="signOut">Выйти</b-button>
-                        </b-button-group>
-                    </b-col>
-                </b-row>
             </b-container>
+            </template>
+            <template v-slot:footer="{ hide }">
+                <div class="d-flex bg-dark text-light justify-content-around align-items-center px-3 py-2">
+                    <b-button variant="outline-warning" @click="signOut">Выйти</b-button>
+                    <b-button size="md" @click="hide">Закрыть</b-button>
+                </div>
             </template>
         </b-sidebar>
         <b-button squared class="position-absolute fixed-top" variant="primary" v-b-toggle.sidebar-1>Меню</b-button>
@@ -74,7 +72,7 @@
         </b-row>
         <b-row>
             <b-col>
-                <div class="input-container">
+                <div class="input-container w-75">
                     <b-input-group>
                         <b-input class="message-input" placeholder="Введите сообщение..." type="text" v-model="messageText"></b-input>
                         <b-input-group-append>
@@ -143,10 +141,10 @@
                 this.messages = [];
 
                 response.then(data => {
-                    if (data === undefined || data.length === 0) {
+                    if (data === undefined || data === null || data.status === false || data.data.length === 0) {
                         return;
                     }
-                    data.forEach(item => {
+                    data.data.forEach(item => {
                             that.messages.push(item)
                         }
                     );
@@ -245,7 +243,6 @@
         flex-direction: row;
         justify-content: space-around;
         padding: 0.5em;
-        width: 95%
     }
 
     .message-input {

@@ -25,5 +25,8 @@ dev:
 front-build:
 	cd ./src/frontend && npm run build
 
+front-dep:
+	cd ./src/frontend && npm install
+
 down: ## stop the project (docker-compose)
 	docker-compose down
