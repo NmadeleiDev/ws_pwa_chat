@@ -30,10 +30,10 @@ services:
     volumes:
       - ./data/mongo:/data/db
     # uncomment the below line to setup mongo replica set!  But only after default setup! And then run rs.initiate() in mongo shell
-    entrypoint: ["/usr/bin/mongod", "--port", "27017", "--dbpath", "/data/db", "--replSet", "rs0", "--bind_ip", "mongodb,localhost"]
+    #entrypoint: ["/usr/bin/mongod", "--port", "27017", "--dbpath", "/data/db", "--replSet", "rs0", "--bind_ip", "mongodb,localhost"]
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     networks:
       - mongodb_net
 
