@@ -16,10 +16,10 @@ func StartServer(port string) {
 	router.HandleFunc("/signout", handlers.SignOutHandler)
 	router.HandleFunc("/unregister", handlers.UnregisterHandler)
 
-	router.HandleFunc("/get_data", handlers.GetUserDataHandler)
+	router.HandleFunc("/user", handlers.GetUserDataHandler)
 	router.HandleFunc("/all_users", handlers.GetAllUsersHandler)
 
-	router.HandleFunc("/get_messages/{chatId}", handlers.GetChatMessagesHandler)
+	router.HandleFunc("/messages/{chatId}", handlers.GetChatMessagesHandler)
 
 	router.HandleFunc("/connect", handlers.ChatSocketHandler)
 

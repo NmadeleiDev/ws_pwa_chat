@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import {store} from './store/index';
+import store from './store';
 import App from './App.vue';
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
@@ -10,8 +10,7 @@ Vue.use(VueNativeSock, "ws://" + window.location.host + "/ws/connect", {
   connectManually: true,
   reconnection: true,
   reconnectionAttempts: 5,
-}, {store: store}, );
-
+}, {store: store, protocol: 'chat'},);
 
 Vue.use(BootstrapVue)
 Vue.use(IconsPlugin)

@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+const (
+	NewChatMeta = 1
+)
+
 func	(client *Client) ReadHub() {
 	var messageStruct structs.Message
 
@@ -35,12 +39,8 @@ func	(client *Client) ReadHub() {
 		if err := json.Unmarshal(message, &messageStruct); err != nil {
 			log.Error("Error unmarshal message: ", err, " Message: ", message)
 		} else {
-			if messageStruct.Meta == "pong" {
-				log.Info("Got pong message.")
-				continue
-			}
 			log.Info("Got message: ", messageStruct)
-			if messageStruct.ChatId == "" && len(messageStruct.Meta) > 0 {
+			if messageStruct.Meta == NewChatMeta {
 				newChat, err := mongodb.CreateChatFromMessage(messageStruct)
 				if err != nil {
 					log.Error("Error creating chat from message: ", err)

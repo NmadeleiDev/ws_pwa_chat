@@ -1,6 +1,6 @@
 VerbaChat real-time messenger project.
 
-This is an open-source messenger project, dedicated to give people opportunity to chat with each other and be sure that their messages are not seen to anybody else.
+This is an open-source messenger project, dedicated to give people opportunity to chosenChat with each other and be sure that their messages are not seen to anybody else.
 
 This project is currently in development.
 Technologies used in the project:
@@ -23,8 +23,8 @@ HOW IT WORKS?
 
 After user signs up or in, websocket connection is established. Server sees him as a client and run 2 sub-processes (goroutines) - one for reading from the connection, one for writeing to connection.
 Client is also subscribed to changes in all of his active chats with mongo's collection.Watch method and change stream.
-When there is a new message in some of his active chats, this message is sent to his connection and gets present on user's screen (message is sent to all the chat's participants).
+When there is a new message in some of his active chats, this message is sent to his connection and gets present on user's screen (message is sent to all the chosenChat's participants).
 
 On the current stage frontend part of the project is fairly simple, as my focus is on server part now.
 
-In order to test the performance of the app, you can sign up a couple of users, and chat between them.  
+In order to test the performance of the app, you can sign up a couple of users, and chosenChat between them.  

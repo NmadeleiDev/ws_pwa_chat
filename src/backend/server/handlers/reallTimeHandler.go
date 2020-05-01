@@ -44,7 +44,7 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
 	}
 
 	clientStruct := client.CreateNewClient(connection, userData)
-	clientStruct.SubscribeToChatEvents()
+	clientStruct.SubscribeToDBEvents()
 	go clientStruct.ReadHub()
 	go clientStruct.WriteHub()
 }

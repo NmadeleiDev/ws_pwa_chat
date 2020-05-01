@@ -22,7 +22,7 @@ type Message struct {
 	Date				int			`json:"date" bson:"date"`
 	State				int			`json:"state" bson:"state"`
 	Text				string		`json:"text" bson:"text"`
-	Meta				string		`json:"meta" bson:"meta"`
+	Meta				int			`json:"meta" bson:"-"`
 	AttachedFilePath	string		`json:"attached_file_path" bson:"attachedfilepath"`
 }
 

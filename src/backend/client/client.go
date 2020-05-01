@@ -35,10 +35,11 @@ func	CreateNewClient(connection *websocket.Conn, user structs.User) (client Clie
 	return client
 }
 
-func	(client *Client) SubscribeToChatEvents() {
+func	(client *Client) SubscribeToDBEvents() {
 
+	// TODO зачем я подписываюсь на каждую колекцию отдельно, занимая память горутинами, если можно подписаться на базу?
 	for _, chat := range client.User.Chats {
-		go mongodb.ListenChangeStream(chat.MessagePoolId, client.ClientExitChan, client.ReadMessageChan)
+		go mongodb.ListenChatChangeStream(chat.MessagePoolId, chat.ChatId, client.ClientExitChan, client.ReadMessageChan)
 		log.Printf("Subscribed %v to %v chat", client.User.Username, chat.Name)
 	}
 }

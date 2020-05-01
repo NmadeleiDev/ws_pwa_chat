@@ -1,13 +1,10 @@
 import axios from 'axios'
-import { alertNotifierChannel } from '../main';
 
 const get = async function (path) {
     const uri = getRequestUri(path);
-    let resultData;
     let resultStatus;
 
     let response = await axios.get(uri);
-    resultData = response.data.data;
     resultStatus = response.data.status;
     console.log("GET: resultStatus: ", resultStatus);
 

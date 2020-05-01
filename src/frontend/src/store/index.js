@@ -4,7 +4,8 @@ import api from "../api/api";
 
 Vue.use(Vuex);
 
-export const store = new Vuex.Store({
+export default new Vuex.Store({
+    strict: process.env.NODE_ENV !== 'production',
     state: {
         user: {
             username: '',
@@ -15,6 +16,7 @@ export const store = new Vuex.Store({
                 name: '',
                 usernames: '',
                 admin: '',
+                messages: []
             }],
         },
         allUsers: [],
@@ -23,6 +25,7 @@ export const store = new Vuex.Store({
             message: '',
             reconnectError: false,
         },
+        currentChatId: 0,
     },
     getters: {
         GET_USER: state => {
@@ -30,31 +33,51 @@ export const store = new Vuex.Store({
         },
         GET_ALL_USERS: state => {
             return state.allUsers;
-        }
+        },
+        GET_MESSAGES: state => {
+            console.log("Message requested");
+            let chat = state.user.chats.find(item => item.chat_id === state.currentChatId);
+            if (chat !== undefined) {
+                console.log("Returning messages from store: ", chat.messages);
+                return chat.messages;
+            }
+            else
+                return null;
+        },
     },
     mutations: {
         SET_USER: (state, payload) => {
-            state.user = payload;
+            state.user.username = payload.username;
+            state.user.email = payload.email;
+            state.user.contacts = payload.contacts;
+
+            // initialize all chats with empty messages to let vuex watch them
+            payload.chats.forEach(item => {
+                item.messages = [];
+            })
+            state.user.chats = payload.chats;
             console.log("User set: ", state.user);
         },
         SET_ALL_USERS: (state, payload) => {
             state.allUsers = payload;
-            console.log("All users set: ", state.allUsers);
         },
+        SET_CHAT_MESSAGES: (state, payload) => {
+            state.user.chats.find(item => item.chat_id === payload.chat_id).messages = payload.messages;
+        },
+
         SOCKET_ONOPEN (state, event)  {
             Vue.prototype.$socket = event.currentTarget
             state.socket.isConnected = true
+            console.log("Connected in store!")
         },
         SOCKET_ONCLOSE (state, event)  {
             state.socket.isConnected = false
         },
         SOCKET_ONERROR (state, event)  {
-            console.error(state, event)
+            console.error("socket error in store: ", state, event)
         },
-        // default handler called for all methods
         SOCKET_ONMESSAGE (state, message)  {
-            console.log("Got message in store: ", message);
-            state.socket.message = message
+            state.user.chats.find(item => item.chat_id === message.chat_id).messages.push(message);
         },
         // mutations for reconnect methods
         SOCKET_RECONNECT(state, count) {
@@ -63,12 +86,31 @@ export const store = new Vuex.Store({
         SOCKET_RECONNECT_ERROR(state) {
             state.socket.reconnectError = true;
         },
+        SET_CURRENT_CHAT(state, id) {
+            state.currentChatId = id;
+        }
     },
     actions: {
         LOAD_USER_DATA: (context) => {
-            const response = api.get("get_data");
+            const response = api.get("user");
             response.then(data => {
-                context.commit("SET_USER", data.data);
+                let user = data.data;
+                context.commit("SET_USER", user);
+                user.chats.forEach(item => {
+                    const response = api.get('messages/' + item.chat_id);
+                    response.then(data => {
+                        let messages = [];
+                        if (data === undefined || data === null || data.status === false) {
+                            console.log("Some error in load messages");
+                            return;
+                        }
+                        data.data.forEach(item => {
+                                messages.push(item)
+                            }
+                        );
+                        context.commit("SET_CHAT_MESSAGES", {chat_id: item.chat_id, messages: messages})
+                    });
+                })
             });
         },
         LOAD_ALL_USERS: (context) => {
@@ -77,11 +119,14 @@ export const store = new Vuex.Store({
                 context.commit("SET_ALL_USERS", data.data);
             });
         },
+        CHANGE_CURRENT_CHAT: (context, payload) => {
+            context.commit("SET_CURRENT_CHAT", payload);
+        },
         SEND_MESSAGE: function(context, message) {
             Vue.prototype.$socket.send(message);
         },
-        RECEIVE_MESSAGE: (injectee, payload) => {
-            injectee.commit("SOCKET_ONMESSAGE", payload);
+        RECEIVE_MESSAGE: (context, payload) => {
+            context.commit("SOCKET_ONMESSAGE", payload);
         }
     },
 });

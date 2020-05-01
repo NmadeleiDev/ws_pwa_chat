@@ -6,3 +6,8 @@ type UpdatedMessageData struct {
 	OperationType			string		`bson:"operationType"`
 	Message					structs.Message	`bson:"fullDocument"`
 }
+
+type UpdatedChatsData struct {
+	OperationType			string		`bson:"operationType"`
+	Chats					structs.Chat	`bson:"fullDocument"`
+}

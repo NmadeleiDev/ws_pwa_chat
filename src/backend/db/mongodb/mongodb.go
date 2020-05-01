@@ -159,9 +159,9 @@ func CreateChatFromMessage(message structs.Message) (structs.Chat, error) {
 
 	database := client.Database("user")
 
-	newChat := structs.Chat{Usernames: []string{message.Sender, message.Meta},
+	newChat := structs.Chat{Usernames: []string{message.Sender, message.ChatId}, // когда приходит сообщение в новый чат, имя собеседника передается в chatId
 		Admin:message.Sender,
-		Name:message.Sender + " + " + message.Meta}
+		Name:message.Sender + " + " + message.ChatId}
 
 	newMessagePoolId := fmt.Sprintf("%x", md5.Sum([]byte(strconv.Itoa(message.Date) + strconv.Itoa(rand.Int()) + strings.Join(newChat.Usernames, "hi!"))))
 	newChat.MessagePoolId = newMessagePoolId
@@ -193,7 +193,7 @@ func CreateChatFromMessage(message structs.Message) (structs.Chat, error) {
 }
 
 
-func ListenChangeStream(messagePoolId string, clientExitChan chan byte, writeUpdatesChan chan structs.Message) {
+func ListenChatChangeStream(messagePoolId string, chatId string, clientExitChan chan byte, writeUpdatesChan chan structs.Message) {
 
 	database := client.Database("chat")
 	collection := database.Collection(messagePoolId)
@@ -238,6 +238,7 @@ func ListenChangeStream(messagePoolId string, clientExitChan chan byte, writeUpd
 	for {
 		select {
 		case message := <- collectionUpdateChan:
+			message.ChatId = chatId
 			writeUpdatesChan <- message
 		case <- clientExitChan:
 			close(collectionUpdateChan)
@@ -245,6 +246,56 @@ func ListenChangeStream(messagePoolId string, clientExitChan chan byte, writeUpd
 		}
 	}
 }
+
+//func ListenUserChatsStream(user structs.User, clientExitChan chan byte, writeUpdatesChan chan structs.Message) {
+//	database := client.Database("user")
+//	collection := database.Collection("users")
+//	collectionUpdateChan := make(chan structs.Chat)
+//
+//	matchStage := bson.D{{"$match", bson.D{{"operationType", "update"}}}}
+//	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
+//	changeStream, err := collection.Watch(context.TODO(), mongo.Pipeline{matchStage}, opts)
+//	if err != nil {
+//		log.Errorf("Error creating change stream %v\n for user %v", err, user.Username)
+//		return
+//	}
+//
+//	go func(stream mongo.ChangeStream, updateChan chan structs.Chat) {
+//		for {
+//			if stream.TryNext(context.TODO()) {
+//				container := UpdatedChatsData{}
+//				if err := stream.Decode(&container); err != nil {
+//					log.Error("Error decoding message: ", err)
+//				}
+//				updateChan <- container.Chats
+//				continue
+//			}
+//			if err := stream.Err(); err != nil {
+//				log.Error("Error reading stream: ", err)
+//				break
+//			}
+//			if stream.ID() == 0 {
+//				break
+//			}
+//		}
+//	}(*changeStream, collectionUpdateChan)
+//
+//	defer func() {
+//		if err := changeStream.Close(context.TODO()); err != nil {
+//			log.Error("error closing change stream: ", err)
+//		}
+//	}()
+//
+//	for {
+//		select {
+//		case chats := <- collectionUpdateChan:
+//			writeUpdatesChan <- chats
+//		case <- clientExitChan:
+//			close(collectionUpdateChan)
+//			return
+//		}
+//	}
+//}
 
 func CloseConnection() {
 	if err := client.Disconnect(context.TODO()); err != nil {
