@@ -8,11 +8,11 @@ type User struct {
 }
 
 type Chat struct {
-	ChatId				string		`json:"chat_id"`
-	Name				string		`json:"name"`
-	Usernames			[]string	`json:"usernames"`
-	Admin				string		`json:"admin"`
-	MessagePoolId		string		`json:"-"`
+	ChatId				string		`json:"chat_id" bson:"chatid"`
+	Name				string		`json:"name" bson:"name"`
+	Usernames			[]string	`json:"usernames" bson:"usernames"`
+	Admin				string		`json:"admin" bson:"admin"`
+	MessagePoolId		string		`json:"-" bson:"messagepoolid"`
 }
 
 type Message struct {
@@ -24,9 +24,4 @@ type Message struct {
 	Text				string		`json:"text" bson:"text"`
 	Meta				int			`json:"meta" bson:"-"`
 	AttachedFilePath	string		`json:"attached_file_path" bson:"attachedfilepath"`
-}
-
-type ResponseJson struct {
-	Status				bool		`json:"status"`
-	Data				interface{}	`json:"data"`
 }

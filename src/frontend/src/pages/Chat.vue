@@ -157,7 +157,7 @@
     }
 
     .messages-container {
-        max-height: 70%;
+        max-height: 100%;
         overflow-x: hidden;
         overflow-x: auto;
         display: flex;

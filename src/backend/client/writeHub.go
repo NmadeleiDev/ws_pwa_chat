@@ -23,7 +23,6 @@ func	(client *Client) WriteHub() {
 	for {
 		select {
 		case message := <- client.ReadMessageChan:
-			log.Info("Got message from chan: ", message.Text)
 			err := client.Connection.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				log.Error("Error setting write deadline: ", err)
@@ -36,7 +35,7 @@ func	(client *Client) WriteHub() {
 			}
 			messageBytes, err := json.Marshal(message)
 			if err != nil {
-				log.Error("Error marshalling message: ", err)
+				log.Error("Error marshal message: ", err)
 				return
 			}
 			_, err = w.Write(messageBytes)
@@ -58,7 +57,11 @@ func	(client *Client) WriteHub() {
 				log.Error("Error writing ticker message to ws: ", err)
 				return
 			}
+		case <- client.ClientExitChan:
+			log.Infof("Exiting write hub for user %v", client.User.Username)
+			return
 		}
+
 	}
 }
 

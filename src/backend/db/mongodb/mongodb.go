@@ -67,7 +67,6 @@ func FillUserData(user structs.User) (structs.User, error) {
 
 	database := client.Database("user")
 	userCollection := database.Collection("users")
-	chatCollection := database.Collection("chats")
 
 	filter := bson.M{"username": user.Username}
 	container := structs.User{}
@@ -81,22 +80,33 @@ func FillUserData(user structs.User) (structs.User, error) {
 	user.Chats = container.Chats
 
 	for i, chat := range user.Chats {
-		objectId, err := primitive.ObjectIDFromHex(chat.ChatId)
+		container, err := GetChatDataById(chat.ChatId)
 		if err != nil {
-			log.Error("Error creating object id: ", err)
+			continue
 		}
-		filter := bson.D{{"_id",  objectId}}
-		container := structs.Chat{}
-		err = chatCollection.FindOne(context.Background(),filter).Decode(&container)
-		if  err != nil {
-			log.Error("Error finding chat document: ", err)
-			return user, err
-		}
-		container.ChatId = chat.ChatId
 		user.Chats[i] = container
 	}
 
 	return user, err
+}
+
+func GetChatDataById(chatId string) (structs.Chat, error) {
+	database := client.Database("user")
+	chatCollection := database.Collection("chats")
+	objectId, err := primitive.ObjectIDFromHex(chatId)
+	if err != nil {
+		log.Error("Error creating object id: ", err)
+		return structs.Chat{}, err
+	}
+	filter := bson.D{{"_id",  objectId}}
+	container := structs.Chat{}
+	err = chatCollection.FindOne(context.Background(),filter).Decode(&container)
+	if  err != nil {
+		log.Error("Error finding chat document: ", err)
+		return structs.Chat{}, err
+	}
+	container.ChatId = chatId
+	return container, nil
 }
 
 func GetMessagesFromPool(chatId string) ([]structs.Message, error) {
@@ -185,117 +195,10 @@ func CreateChatFromMessage(message structs.Message) (structs.Chat, error) {
 		log.Error("Error updating user chats: ", err)
 	}
 
-	if result.MatchedCount != 0 {
-		fmt.Printf("matched and replaced %v documents", result.MatchedCount)
-	}
+	log.Infof("Pushed new chat for %v users: %v", result.ModifiedCount, newChat.Usernames)
 
 	return newChat, nil
 }
-
-
-func ListenChatChangeStream(messagePoolId string, chatId string, clientExitChan chan byte, writeUpdatesChan chan structs.Message) {
-
-	database := client.Database("chat")
-	collection := database.Collection(messagePoolId)
-	collectionUpdateChan := make(chan structs.Message)
-
-	matchStage := bson.D{{"$match", bson.D{{"operationType", "insert"}}}}
-	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-	changeStream, err := collection.Watch(context.TODO(), mongo.Pipeline{matchStage}, opts)
-	if err != nil {
-		log.Error("Error watching message pool: ", err,  " poolID: ", messagePoolId)
-		return
-	}
-
-	go func(stream mongo.ChangeStream, updateChan chan structs.Message) {
-		for {
-			if stream.TryNext(context.TODO()) {
-				container := UpdatedMessageData{}
-				if err := stream.Decode(&container); err != nil {
-					log.Error("Error decoding message: ", err)
-				}
-				updateChan <- container.Message
-				continue
-			}
-			// If TryNext returns false, the next change is not yet available, the change stream was closed by the server,
-			// or an error occurred. TryNext should only be called again for the empty batch case.
-			if err := stream.Err(); err != nil {
-				log.Error("Error reading stream: ", err)
-				break
-			}
-			if stream.ID() == 0 {
-				break
-			}
-		}
-	}(*changeStream, collectionUpdateChan)
-
-	defer func() {
-		if err := changeStream.Close(context.TODO()); err != nil {
-			log.Error("error closing change stream: ", err)
-		}
-	}()
-
-	for {
-		select {
-		case message := <- collectionUpdateChan:
-			message.ChatId = chatId
-			writeUpdatesChan <- message
-		case <- clientExitChan:
-			close(collectionUpdateChan)
-			return
-		}
-	}
-}
-
-//func ListenUserChatsStream(user structs.User, clientExitChan chan byte, writeUpdatesChan chan structs.Message) {
-//	database := client.Database("user")
-//	collection := database.Collection("users")
-//	collectionUpdateChan := make(chan structs.Chat)
-//
-//	matchStage := bson.D{{"$match", bson.D{{"operationType", "update"}}}}
-//	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-//	changeStream, err := collection.Watch(context.TODO(), mongo.Pipeline{matchStage}, opts)
-//	if err != nil {
-//		log.Errorf("Error creating change stream %v\n for user %v", err, user.Username)
-//		return
-//	}
-//
-//	go func(stream mongo.ChangeStream, updateChan chan structs.Chat) {
-//		for {
-//			if stream.TryNext(context.TODO()) {
-//				container := UpdatedChatsData{}
-//				if err := stream.Decode(&container); err != nil {
-//					log.Error("Error decoding message: ", err)
-//				}
-//				updateChan <- container.Chats
-//				continue
-//			}
-//			if err := stream.Err(); err != nil {
-//				log.Error("Error reading stream: ", err)
-//				break
-//			}
-//			if stream.ID() == 0 {
-//				break
-//			}
-//		}
-//	}(*changeStream, collectionUpdateChan)
-//
-//	defer func() {
-//		if err := changeStream.Close(context.TODO()); err != nil {
-//			log.Error("error closing change stream: ", err)
-//		}
-//	}()
-//
-//	for {
-//		select {
-//		case chats := <- collectionUpdateChan:
-//			writeUpdatesChan <- chats
-//		case <- clientExitChan:
-//			close(collectionUpdateChan)
-//			return
-//		}
-//	}
-//}
 
 func CloseConnection() {
 	if err := client.Disconnect(context.TODO()); err != nil {

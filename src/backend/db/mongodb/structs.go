@@ -1,6 +1,8 @@
 package mongodb
 
-import "chat_backend/structs"
+import (
+	"chat_backend/structs"
+)
 
 type UpdatedMessageData struct {
 	OperationType			string		`bson:"operationType"`
@@ -8,6 +10,6 @@ type UpdatedMessageData struct {
 }
 
 type UpdatedChatsData struct {
-	OperationType			string		`bson:"operationType"`
-	Chats					structs.Chat	`bson:"fullDocument"`
+	OperationType			string		`bson:"-"`
+	Chats					[]structs.Chat	`bson:"updateDescription.updatedFields.chats"`
 }

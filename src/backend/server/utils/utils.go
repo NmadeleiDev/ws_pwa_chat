@@ -37,7 +37,7 @@ func SendFailResponse(w http.ResponseWriter) {
 	var packet	[]byte
 	var err		error
 
-	response := &structs.ResponseJson{Status:false, Data:nil}
+	response := &structs.HttpResponse{Status: false, Data:nil}
 	if packet, err = json.Marshal(response); err != nil {
 		log.Error("Error marshalling response: ", err)
 	}
@@ -50,7 +50,7 @@ func SendSuccessResponse(w http.ResponseWriter) {
 	var packet	[]byte
 	var err		error
 
-	response := &structs.ResponseJson{Status:true, Data:nil}
+	response := &structs.HttpResponse{Status: true, Data:nil}
 	if packet, err = json.Marshal(response); err != nil {
 		log.Error("Error marshalling response: ", err)
 	}
@@ -63,7 +63,7 @@ func SendDataResponse(w http.ResponseWriter, data interface{}) {
 	var packet	[]byte
 	var err		error
 
-	response := &structs.ResponseJson{Status:true, Data:data}
+	response := &structs.HttpResponse{Status: true, Data:data}
 	if packet, err = json.Marshal(response); err != nil {
 		log.Error("Error marshalling response: ", err)
 	}
@@ -84,7 +84,7 @@ func RefreshRequestSessionKeyCookie(w http.ResponseWriter, user structs.User) bo
 
 	SetCookie(w, "session_id", sessionKey)
 
-	response := &structs.ResponseJson{Status:true, Data:nil}
+	response := &structs.HttpResponse{Status: true, Data:nil}
 	if packet, err = json.Marshal(response); err != nil {
 		log.Error("Error marshalling response: ", err)
 	}

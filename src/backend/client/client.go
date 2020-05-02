@@ -25,13 +25,18 @@ const (
 type Client struct {
 	User				structs.User
 	Connection			*websocket.Conn
-	ReadMessageChan		chan structs.Message
+	ReadMessageChan		chan structs.SocketMessage
 	ClientExitChan		chan byte
+}
+
+type ServerClientMessage struct {
+	Type				string		`json:"type"`
+	Data				[]byte		`json:"data"`
 }
 
 func	CreateNewClient(connection *websocket.Conn, user structs.User) (client Client) {
 
-	client = Client{User:user, Connection:connection, ReadMessageChan:make(chan structs.Message), ClientExitChan: make(chan byte)}
+	client = Client{User:user, Connection:connection, ReadMessageChan:make(chan structs.SocketMessage), ClientExitChan: make(chan byte)}
 	return client
 }
 
@@ -42,4 +47,5 @@ func	(client *Client) SubscribeToDBEvents() {
 		go mongodb.ListenChatChangeStream(chat.MessagePoolId, chat.ChatId, client.ClientExitChan, client.ReadMessageChan)
 		log.Printf("Subscribed %v to %v chat", client.User.Username, chat.Name)
 	}
+	go mongodb.ListenUserChatsStream(&client.User, client.ClientExitChan, client.ReadMessageChan)
 }

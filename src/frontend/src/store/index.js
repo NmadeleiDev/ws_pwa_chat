@@ -4,6 +4,9 @@ import api from "../api/api";
 
 Vue.use(Vuex);
 
+const messageType = 1
+const chatType = 2
+
 export default new Vuex.Store({
     strict: process.env.NODE_ENV !== 'production',
     state: {
@@ -64,7 +67,6 @@ export default new Vuex.Store({
         SET_CHAT_MESSAGES: (state, payload) => {
             state.user.chats.find(item => item.chat_id === payload.chat_id).messages = payload.messages;
         },
-
         SOCKET_ONOPEN (state, event)  {
             Vue.prototype.$socket = event.currentTarget
             state.socket.isConnected = true
@@ -76,8 +78,17 @@ export default new Vuex.Store({
         SOCKET_ONERROR (state, event)  {
             console.error("socket error in store: ", state, event)
         },
-        SOCKET_ONMESSAGE (state, message)  {
-            state.user.chats.find(item => item.chat_id === message.chat_id).messages.push(message);
+        SOCKET_ONMESSAGE (state, socketMessage)  {
+            switch (socketMessage.type) {
+                case messageType: // TODO: message.error handling
+                    state.user.chats.find(item => item.chat_id === socketMessage.data.chat_id).messages.push(socketMessage.data);
+                    break;
+                case chatType:
+                    state.user.chats.push(socketMessage.data)
+                    break;
+                default:
+                    console.log("Unknown message type: ", socketMessage)
+            }
         },
         // mutations for reconnect methods
         SOCKET_RECONNECT(state, count) {
