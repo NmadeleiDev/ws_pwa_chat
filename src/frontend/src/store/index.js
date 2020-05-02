@@ -28,6 +28,7 @@ export default new Vuex.Store({
             message: '',
             reconnectError: false,
         },
+        newContactName: '',
         currentChatId: 0,
     },
     getters: {
@@ -47,6 +48,12 @@ export default new Vuex.Store({
             else
                 return null;
         },
+        GET_CURRENT_CHAT_ID: state => {
+            return state.currentChatId;
+        },
+        GET_NEW_CONTACT_NAME: state => {
+            return state.newContactName;
+        }
     },
     mutations: {
         SET_USER: (state, payload) => {
@@ -79,11 +86,17 @@ export default new Vuex.Store({
             console.error("socket error in store: ", state, event)
         },
         SOCKET_ONMESSAGE (state, socketMessage)  {
+            let container;
+            
             switch (socketMessage.type) {
                 case messageType: // TODO: message.error handling
-                    state.user.chats.find(item => item.chat_id === socketMessage.data.chat_id).messages.push(socketMessage.data);
+                    container = state.user.chats.find(item => item.chat_id === socketMessage.data.chat_id)
+                    if (container.messages === undefined || container.messages === null)
+                        container.messages = []
+                    container.messages.push(socketMessage.data);
                     break;
                 case chatType:
+                    socketMessage.data.messages = [];
                     state.user.chats.push(socketMessage.data)
                     break;
                 default:
@@ -99,6 +112,9 @@ export default new Vuex.Store({
         },
         SET_CURRENT_CHAT(state, id) {
             state.currentChatId = id;
+        },
+        SET_NEW_CONTACT_NAME(state, name) {
+            state.newContactName = name;
         }
     },
     actions: {
@@ -133,8 +149,43 @@ export default new Vuex.Store({
         CHANGE_CURRENT_CHAT: (context, payload) => {
             context.commit("SET_CURRENT_CHAT", payload);
         },
+        CHANGE_NEW_CONTACT_NAME: (context, payload) => {
+            context.commit("SET_NEW_CONTACT_NAME", payload);
+        },
         SEND_MESSAGE: function(context, message) {
-            Vue.prototype.$socket.send(message);
+            let newMessage = {
+                sender: context.getters.GET_USER.username,
+                chat_id: context.getters.GET_CURRENT_CHAT_ID,
+                is_read: false,
+                date: Date.now(),
+                state: 0,
+                text: message,
+                meta: null,
+                attached_file_path: "",
+            }
+
+            if (context.getters.GET_CURRENT_CHAT_ID === null) {
+                let chat = {
+                    name: context.getters.GET_USER.username + " with " + context.getters.GET_NEW_CONTACT_NAME,
+                    admin: context.getters.GET_USER.username,
+                    usernames: [context.getters.GET_USER.username, context.getters.GET_NEW_CONTACT_NAME]
+                }
+                api.post("chat", chat).then(data => {
+                    if (data.status === false) {
+                        console.log("server error creating chat")
+                        return;
+                    }
+                    const newChat = data.data;
+                    console.log("Created chat: ", newChat);
+                    newMessage.chat_id = newChat.chat_id;
+                    context.commit("SET_CURRENT_CHAT", newChat.chat_id)
+                    Vue.prototype.$socket.send(JSON.stringify(newMessage));
+                    console.log("init message sent: ", newMessage);
+                })
+            } else {
+                Vue.prototype.$socket.send(JSON.stringify(newMessage));
+                console.log("reg message sent: ", newMessage);
+            }
         },
         RECEIVE_MESSAGE: (context, payload) => {
             context.commit("SOCKET_ONMESSAGE", payload);

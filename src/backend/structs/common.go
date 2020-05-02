@@ -1,6 +1,9 @@
 package structs
 
+import "sync"
+
 type User struct {
+	mut					sync.Mutex
 	Username			string		`json:"username"`
 	Email				string		`json:"email"`
 	Password			string		`json:"password,omitempty"`
@@ -13,6 +16,7 @@ type Chat struct {
 	Usernames			[]string	`json:"usernames" bson:"usernames"`
 	Admin				string		`json:"admin" bson:"admin"`
 	MessagePoolId		string		`json:"-" bson:"messagepoolid"`
+	//Messages			[]string	`json:"messages" bson:"-"`
 }
 
 type Message struct {

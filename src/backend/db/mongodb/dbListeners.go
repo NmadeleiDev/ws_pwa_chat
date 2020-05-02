@@ -46,7 +46,7 @@ func ListenChatChangeStream(messagePoolId string, chatId string, clientExitChan 
 		}
 	}(*changeStream, collectionUpdateChan)
 
-	log.Infof("Subscribed someone to his chats with change stream %v", changeStream.ID())
+	log.Infof("Subscribed someone to his chats in %v with change stream %v", messagePoolId, changeStream.ID())
 
 	defer func() {
 		if err := changeStream.Close(context.TODO()); err != nil {
@@ -89,7 +89,7 @@ func ListenUserChatsStream(user *structs.User, clientExitChan chan byte, writeUp
 			if stream.TryNext(context.TODO()) {
 				chat := structs.Chat{}
 				current := stream.Current
-				chatsObjName := getChatsObjName(len(user.Chats)) // Объясняю: монго возвращает вставенный чат не просто как объект, а как массив с одмин чатом, с названием по форме "chats.{номер вставленного чата}", поэтому, чтобы его найти, приходится создавать именно такое название
+				chatsObjName := getChatsObjName(len(user.Chats)) // Объясняю: монго возвращает вставленный чат не просто как объект, а как массив с одмин чатом, с названием по форме "chats.{номер вставленного чата}", поэтому, чтобы его найти, приходится создавать именно такое название
 				log.Info("Chat obj: ", chatsObjName)
 				err = current.Lookup("updateDescription", "updatedFields", chatsObjName).Unmarshal(&chat)
 				if err != nil {
@@ -129,6 +129,9 @@ func ListenUserChatsStream(user *structs.User, clientExitChan chan byte, writeUp
 			if err != nil {
 				log.Error("Error getting chat data by id: ", err)
 			}
+			user.Chats = append(user.Chats, chat)
+			// сразу подписываю юзера на новый чат
+			go ListenChatChangeStream(chat.MessagePoolId, chat.ChatId, clientExitChan, writeUpdatesChan)
 			update := structs.SocketMessage{Type: constants.ChatType, Data: chat, Error: err}
 			writeUpdatesChan <- update
 		case <- clientExitChan:

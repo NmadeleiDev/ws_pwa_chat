@@ -76,17 +76,17 @@
         },
         methods: {
             sendMessage() {
-                const message = {
-                    sender: this.user.username,
-                    chat_id: this.chosenChat.chat_id,
-                    meta: this.chosenChat.meta,
-                    date: Date.now(),
-                    state: 0,
-                    text: this.messageText,
-                    attached_file_path: null,
-                };
+                // const message = {
+                //     sender: this.user.username,
+                //     chat_id: this.chosenChat.chat_id,
+                //     meta: this.chosenChat.meta,
+                //     date: Date.now(),
+                //     state: 0,
+                //     text: this.messageText,
+                //     attached_file_path: null,
+                // };
+                this.$store.dispatch("SEND_MESSAGE", this.messageText);
                 this.messageText = "";
-                this.$store.dispatch("SEND_MESSAGE", JSON.stringify(message));
                 // this.messages.push(message);
             },
             setConnection() {
@@ -102,18 +102,20 @@
             },
             setExistingChat(contactItem) {
                 this.chosenChat = contactItem;
-                this.chosenChat.meta = 0;
+                this.chosenChat.meta = null;
                 this.$store.dispatch("CHANGE_CURRENT_CHAT", contactItem.chat_id);
             },
             setNewChat(recipientName) {
                 this.chosenChat = {
-                    chat_id: recipientName.username,
+                    chat_id: null,
                     name: recipientName.username,
                     usernames: [recipientName.username, this.user.username],
                     admin: this.user.username,
-                    meta: 1,
+                    meta: recipientName.username,
                 };
                 this.messages = [];
+                this.$store.dispatch("CHANGE_CURRENT_CHAT", null);
+                this.$store.dispatch("CHANGE_NEW_CONTACT_NAME", recipientName.username);
             },
             convertToDatetime(timestamp) {
                 const date = new Date(timestamp);

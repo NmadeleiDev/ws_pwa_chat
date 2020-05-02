@@ -15,6 +15,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var client *mongo.Client
@@ -63,7 +64,7 @@ func CreateUser(user structs.User) bool {
 	return true
 }
 
-func FillUserData(user structs.User) (structs.User, error) {
+func FillUserData(user *structs.User) error {
 
 	database := client.Database("user")
 	userCollection := database.Collection("users")
@@ -73,7 +74,7 @@ func FillUserData(user structs.User) (structs.User, error) {
 	err := userCollection.FindOne(context.Background(),filter).Decode(&container)
 	if  err != nil {
 		log.Error("Error finding user document: ", err)
-		return user, err
+		return err
 	} else {
 		log.Info("Got user document: ", container)
 	}
@@ -87,7 +88,7 @@ func FillUserData(user structs.User) (structs.User, error) {
 		user.Chats[i] = container
 	}
 
-	return user, err
+	return err
 }
 
 func GetChatDataById(chatId string) (structs.Chat, error) {
@@ -188,6 +189,38 @@ func CreateChatFromMessage(message structs.Message) (structs.Chat, error) {
 	userCollection := database.Collection("users")
 
 	filter := bson.D{{"$or", bson.A{bson.M{"username": newChat.Usernames[0]}, bson.M{"username": newChat.Usernames[1]}}}}
+	update := bson.D{{"$push", bson.D{{"chats", bson.D{{"chatid", newChat.ChatId}, {"messagepoolid", newChat.MessagePoolId}}}}}}
+
+	result, err := userCollection.UpdateMany(context.TODO(), filter, update)
+	if err != nil {
+		log.Error("Error updating user chats: ", err)
+	}
+
+	log.Infof("Pushed new chat for %v users: %v", result.ModifiedCount, newChat.Usernames)
+
+	return newChat, nil
+}
+
+func CreateChat(newChat structs.Chat) (structs.Chat, error) {
+
+	database := client.Database("user")
+
+	newMessagePoolId := fmt.Sprintf("%x", md5.Sum([]byte(time.Now().String() + strconv.Itoa(rand.Int()) + strings.Join(newChat.Usernames, "hi!"))))
+	newChat.MessagePoolId = newMessagePoolId
+
+	chatsCollection := database.Collection("chats")
+
+	res, err := chatsCollection.InsertOne(context.TODO(), newChat)
+	if err != nil {
+		log.Error("Error inserting chat to mongo: ", err)
+		return structs.Chat{}, err
+	}
+	newChat.ChatId = strings.Split(res.InsertedID.(primitive.ObjectID).String(), "\"")[1]
+
+	userCollection := database.Collection("users")
+
+	filter := bson.D{{"$or", bson.A{bson.M{"username": newChat.Usernames[0]}, bson.M{"username": newChat.Usernames[1]}}}}
+	//filter := bson.D{{"$or", newChat.Usernames}}
 	update := bson.D{{"$push", bson.D{{"chats", bson.D{{"chatid", newChat.ChatId}, {"messagepoolid", newChat.MessagePoolId}}}}}}
 
 	result, err := userCollection.UpdateMany(context.TODO(), filter, update)

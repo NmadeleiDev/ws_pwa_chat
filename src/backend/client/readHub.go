@@ -39,19 +39,11 @@ func	(client *Client) ReadHub() {
 		if err := json.Unmarshal(message, &messageStruct); err != nil {
 			log.Error("Error unmarshal message: ", err, " Message: ", message)
 		} else {
-			log.Info("Got message: ", messageStruct)
-			if messageStruct.Meta == NewChatMeta {
-				newChat, err := mongodb.CreateChatFromMessage(messageStruct)
-				if err != nil {
-					log.Error("Error creating chat from message: ", err)
-					break
-				}
-				client.User.Chats = append(client.User.Chats, newChat)
-				messageStruct.ChatId = newChat.ChatId
-			}
+			log.Info("Got message in read hub: ", messageStruct)
 			for _, chat := range client.User.Chats {
 				if chat.ChatId == messageStruct.ChatId {
 					go mongodb.WriteNewMessage(chat.MessagePoolId, messageStruct)
+					log.Info("Found matching chat for message " + messageStruct.Text)
 				}
 			}
 		}

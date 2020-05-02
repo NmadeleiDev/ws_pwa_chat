@@ -17,6 +17,7 @@ func StartServer(port string) {
 	router.HandleFunc("/unregister", handlers.UnregisterHandler)
 
 	router.HandleFunc("/user", handlers.GetUserDataHandler)
+	router.HandleFunc("/chat", handlers.CreateChatHandler)
 	router.HandleFunc("/all_users", handlers.GetAllUsersHandler)
 
 	router.HandleFunc("/messages/{chatId}", handlers.GetChatMessagesHandler)

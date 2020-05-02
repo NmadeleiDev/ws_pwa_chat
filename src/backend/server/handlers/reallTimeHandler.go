@@ -37,13 +37,13 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
 		log.Error("Error getting user data from postgres: ", err)
 		return
 	}
-	userData, err = mongodb.FillUserData(userData)
+	err = mongodb.FillUserData(&userData)
 	if err != nil {
 		log.Error("Error getting user data from mongo: ", err)
 		return
 	}
 
-	clientStruct := client.CreateNewClient(connection, userData)
+	clientStruct := client.CreateNewClient(connection, &userData)
 	clientStruct.SubscribeToDBEvents()
 	go clientStruct.ReadHub()
 	go clientStruct.WriteHub()
