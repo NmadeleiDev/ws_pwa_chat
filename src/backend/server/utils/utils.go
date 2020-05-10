@@ -12,6 +12,17 @@ const (
 	oneDayInSeconds = 86400
 )
 
+func ValidateRequest(w http.ResponseWriter, r *http.Request) bool {
+	sessionKey := GetCookieValue(r, "session_id")
+	_, err := postgres.GetUserNameAndId(sessionKey)
+	if err != nil {
+		log.Error("Error getting user data from postgres: ", err)
+		SendFailResponse(w)
+		return false
+	}
+	return true
+}
+
 func SetCookie(w http.ResponseWriter, cookieName, value string) {
 	c := http.Cookie{
 		Name: cookieName,

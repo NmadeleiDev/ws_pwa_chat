@@ -6,7 +6,6 @@ const get = async function (path) {
 
     let response = await axios.get(uri);
     resultStatus = response.data.status;
-    console.log("GET: resultStatus: ", resultStatus);
 
     if (resultStatus !== true) {
         console.log(response);
@@ -19,7 +18,6 @@ const post = async function (path, data = null) {
     const uri = getRequestUri(path);
 
     let response = await axios.post(uri, data);
-    console.log("POST: resultStatus: ", response.data.status);
 
     if (response.data.status !== true) {
         console.log("failed response: ", response);

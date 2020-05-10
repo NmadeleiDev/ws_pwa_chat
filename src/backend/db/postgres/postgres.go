@@ -50,7 +50,7 @@ func InitTables() {
 	query := `create schema if not exists ` + strings.Split(userDataTable, ".")[0]
 
 	if _, err := connection.Exec(query); err != nil {
-		log.Error("Error creating schema: ", err)
+		log.Fatal("Error creating schema: ", err)
 	}
 
 	query = `create table if not exists ` + userDataTable + `
@@ -61,10 +61,11 @@ func InitTables() {
     username      varchar(64)  not null,
     password      varchar(255) not null,
     email_address varchar(128) default NULL::character varying,
-    session_key   varchar(128) default NULL::character varying
+    session_key   varchar(128) default NULL::character varying,
+	online		  boolean	   default false
 )`
 	if _, err := connection.Exec(query); err != nil {
-		log.Error("Error creating table: ", err)
+		log.Fatal("Error creating table: ", err)
 	}
 }
 
@@ -131,16 +132,29 @@ WHERE username=$1`
 	}
 }
 
-func GetUserNameAndEmail(sessionKey string) (user structs.User, err error) {
+func GetUserNameAndId(sessionKey string) (user structs.User, err error) {
 
 	query := `
-SELECT username, email_address
+SELECT username, id
 FROM ` + userDataTable + ` 
 WHERE session_key=$1`
 
 	row := connection.QueryRow(query, sessionKey)
-	err = row.Scan(&user.Username, &user.Email)
+	err = row.Scan(&user.Username, &user.Id)
 	return user, err
+}
+
+func ToggleUserOnlineState(id int, state bool) bool {
+	query := `
+UPDATE ` + userDataTable + ` 
+SET online=$1 WHERE id=$2`
+
+	if _, err := connection.Exec(query, state, id); err != nil {
+		log.Error("Error updating online state: ", err)
+		return false
+	}
+	log.Info("Toggled user %v state = %v", id, state)
+	return true
 }
 
 func GetAllUsers() ([]structs.User, error) {

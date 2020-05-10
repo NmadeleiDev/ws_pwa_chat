@@ -24,7 +24,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
-
 	connection, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("Error establishing ws connection: ", err)
@@ -32,7 +31,7 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
 	}
 	sessionKey := utils.GetCookieValue(r, "session_id")
 
-	userData, err := postgres.GetUserNameAndEmail(sessionKey)
+	userData, err := postgres.GetUserNameAndId(sessionKey)
 	if err != nil {
 		log.Error("Error getting user data from postgres: ", err)
 		return
@@ -42,6 +41,7 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
 		log.Error("Error getting user data from mongo: ", err)
 		return
 	}
+	go postgres.ToggleUserOnlineState(userData.Id, true)
 
 	clientStruct := client.CreateNewClient(connection, &userData)
 	clientStruct.SubscribeToDBEvents()

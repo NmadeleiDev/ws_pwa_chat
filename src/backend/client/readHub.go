@@ -11,11 +11,16 @@ import (
 
 const (
 	NewChatMeta = 1
+	InsertMessage = 1
+	UpdateMessage = 2
+	DeleteMessage = 3
+
+	MessageSent = 1
+	MessageDelivered = 2
+	MessageRead = 3
 )
 
 func	(client *Client) ReadHub() {
-	var messageStruct structs.Message
-
 	defer func() {
 		if err := client.Connection.Close(); err != nil {
 			log.Error("Error closing connection in read: ", err)
@@ -29,6 +34,7 @@ func	(client *Client) ReadHub() {
 	}
 	client.Connection.SetPongHandler(func(string) error { client.Connection.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
+		var messageStruct structs.ClientMessage
 		_, message, err := client.Connection.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -41,12 +47,21 @@ func	(client *Client) ReadHub() {
 		} else {
 			log.Info("Got message in read hub: ", messageStruct)
 			for _, chat := range client.User.Chats {
-				if chat.ChatId == messageStruct.ChatId {
-					go mongodb.WriteNewMessage(chat.MessagePoolId, messageStruct)
-					log.Info("Found matching chat for message " + messageStruct.Text)
+				if chat.ChatId == messageStruct.Message.ChatId {
+					switch messageStruct.Type {
+					case InsertMessage:
+						messageStruct.Message.State = MessageDelivered
+						go mongodb.WriteNewMessage(chat.MessagePoolId, messageStruct.Message)
+					case UpdateMessage:
+						go mongodb.UpdateMessage(chat.MessagePoolId, messageStruct.Message)
+					case DeleteMessage:
+						go mongodb.DeleteMessage(chat.MessagePoolId, messageStruct.Message)
+					default:
+						log.Warn("Unknown message type: ", messageStruct)
+					}
+					log.Info("Found matching chat for message " + messageStruct.Message.Text)
 				}
 			}
 		}
 	}
 }
-

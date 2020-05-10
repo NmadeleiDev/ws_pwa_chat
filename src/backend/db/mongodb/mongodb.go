@@ -85,6 +85,7 @@ func FillUserData(user *structs.User) error {
 		if err != nil {
 			continue
 		}
+		container.LastReadMessageId = chat.LastReadMessageId
 		user.Chats[i] = container
 	}
 
@@ -96,7 +97,7 @@ func GetChatDataById(chatId string) (structs.Chat, error) {
 	chatCollection := database.Collection("chats")
 	objectId, err := primitive.ObjectIDFromHex(chatId)
 	if err != nil {
-		log.Error("Error creating object id: ", err)
+		log.Errorf("Error creating object id: %v; chat id provided: %v", err, chatId)
 		return structs.Chat{}, err
 	}
 	filter := bson.D{{"_id",  objectId}}
@@ -121,7 +122,8 @@ func GetMessagesFromPool(chatId string) ([]structs.Message, error) {
 	opts := options.FindOne()
 	objectId, err := primitive.ObjectIDFromHex(chatId)
 	if err != nil {
-		log.Error("Error creating object id: ", err)
+		log.Error("Error creating object id: %v; provided chat id: %v", err, chatId)
+		return nil, err
 	}
 	filter := bson.M{"_id": objectId}
 	err = coll.FindOne(context.TODO(), filter, opts).Decode(&chat)
@@ -166,49 +168,48 @@ func WriteNewMessage(messagePoolId string, message structs.Message) {
 	}
 }
 
-func CreateChatFromMessage(message structs.Message) (structs.Chat, error) {
+func UpdateMessage(messagePoolId string, message structs.Message) {
 
-	database := client.Database("user")
+	database := client.Database("chat")
+	coll := database.Collection(messagePoolId)
 
-	newChat := structs.Chat{Usernames: []string{message.Sender, message.ChatId}, // когда приходит сообщение в новый чат, имя собеседника передается в chatId
-		Admin:message.Sender,
-		Name:message.Sender + " + " + message.ChatId}
+	message.ChatId = ""
 
-	newMessagePoolId := fmt.Sprintf("%x", md5.Sum([]byte(strconv.Itoa(message.Date) + strconv.Itoa(rand.Int()) + strings.Join(newChat.Usernames, "hi!"))))
-	newChat.MessagePoolId = newMessagePoolId
+	opts := options.Update().SetUpsert(false)
+	filter := bson.D{{"id", message.Id}}
+	update := bson.D{{"$set", bson.D{{"state", message.State}, {"text", message.Text}}}}
 
-	chatsCollection := database.Collection("chats")
-
-	res, err := chatsCollection.InsertOne(context.TODO(), newChat)
+	result, err := coll.UpdateOne(context.TODO(), filter, update, opts)
 	if err != nil {
-		log.Error("Error inserting chat to mongo: ", err)
-		return structs.Chat{}, err
+		log.Error("Error updating message: ", err)
 	}
-	newChat.ChatId = strings.Split(res.InsertedID.(primitive.ObjectID).String(), "\"")[1]
+	log.Infof("Updated %v document message", result.ModifiedCount)
+}
 
-	userCollection := database.Collection("users")
+func DeleteMessage(messagePoolId string, message structs.Message) {
 
-	filter := bson.D{{"$or", bson.A{bson.M{"username": newChat.Usernames[0]}, bson.M{"username": newChat.Usernames[1]}}}}
-	update := bson.D{{"$push", bson.D{{"chats", bson.D{{"chatid", newChat.ChatId}, {"messagepoolid", newChat.MessagePoolId}}}}}}
+	database := client.Database("chat")
+	coll := database.Collection(messagePoolId)
 
-	result, err := userCollection.UpdateMany(context.TODO(), filter, update)
+	message.ChatId = ""
+
+	opts := options.Delete()
+	filter := bson.D{{"id", message.Id}}
+
+	result, err := coll.DeleteOne(context.TODO(), filter, opts)
 	if err != nil {
-		log.Error("Error updating user chats: ", err)
+		log.Error("Error updating message: ", err)
 	}
-
-	log.Infof("Pushed new chat for %v users: %v", result.ModifiedCount, newChat.Usernames)
-
-	return newChat, nil
+	log.Infof("Deleted %v document message", result.DeletedCount)
 }
 
 func CreateChat(newChat structs.Chat) (structs.Chat, error) {
 
 	database := client.Database("user")
+	chatsCollection := database.Collection("chats")
 
 	newMessagePoolId := fmt.Sprintf("%x", md5.Sum([]byte(time.Now().String() + strconv.Itoa(rand.Int()) + strings.Join(newChat.Usernames, "hi!"))))
 	newChat.MessagePoolId = newMessagePoolId
-
-	chatsCollection := database.Collection("chats")
 
 	res, err := chatsCollection.InsertOne(context.TODO(), newChat)
 	if err != nil {
@@ -217,20 +218,86 @@ func CreateChat(newChat structs.Chat) (structs.Chat, error) {
 	}
 	newChat.ChatId = strings.Split(res.InsertedID.(primitive.ObjectID).String(), "\"")[1]
 
-	userCollection := database.Collection("users")
-
-	filter := bson.D{{"$or", bson.A{bson.M{"username": newChat.Usernames[0]}, bson.M{"username": newChat.Usernames[1]}}}}
-	//filter := bson.D{{"$or", newChat.Usernames}}
-	update := bson.D{{"$push", bson.D{{"chats", bson.D{{"chatid", newChat.ChatId}, {"messagepoolid", newChat.MessagePoolId}}}}}}
-
-	result, err := userCollection.UpdateMany(context.TODO(), filter, update)
-	if err != nil {
-		log.Error("Error updating user chats: ", err)
+	for _, user := range newChat.Usernames {
+		AddChatToUserChats(newChat, user)
 	}
 
-	log.Infof("Pushed new chat for %v users: %v", result.ModifiedCount, newChat.Usernames)
-
 	return newChat, nil
+}
+
+func AddUserToChatMembers(chatId string, user structs.User) bool {
+	database := client.Database("user")
+	chatsCollection := database.Collection("chats")
+
+	objectId, err := primitive.ObjectIDFromHex(chatId)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided chat id: %v", err, chatId)
+		return false
+	}
+	filter := bson.D{{"_id", objectId}}
+	update := bson.D{{"$addToSet", bson.D{{"usernames", user.Username}}}}
+
+	result, err := chatsCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Error("Error updating chats collection: ", err)
+		return false
+	}
+	log.Infof("Pushed %v new user %v for chat: %v", result.ModifiedCount, user, chatId)
+	return true
+}
+
+func AddChatToUserChats(chat structs.Chat, username string) bool {
+	database := client.Database("user")
+	userCollection := database.Collection("users")
+
+	filter := bson.D{{"username", username}}
+	update := bson.D{{"$addToSet", bson.D{{"chats", bson.D{{"chatid", chat.ChatId}, {"messagepoolid", chat.MessagePoolId}, {"last_read_message_id", ""}}}}}}
+
+	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Error("Error updating user chats: ", err)
+		return false
+	}
+	log.Infof("Pushed new chat for %v user: %v", result.ModifiedCount, username)
+	return true
+}
+
+func EditChatName(chat structs.Chat) bool {
+	database := client.Database("user")
+	chatsCollection := database.Collection("chats")
+
+	objectId, err := primitive.ObjectIDFromHex(chat.ChatId)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided chat id: %v", err, chat)
+		return false
+	}
+	filter := bson.D{{"_id", objectId}}
+	update := bson.D{{"$set", bson.D{{"name", chat.Name}}}}
+
+	_, err = chatsCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Error("Error updating chats collection: ", err)
+		return false
+	}
+	return true
+}
+
+func UpdateLastReadMessageId(message structs.Message, username string) bool {
+	database := client.Database("user")
+	userCollection := database.Collection("users")
+
+	filter := bson.D{{"username", username}}
+	update := bson.D{{"$set", bson.D{{"chats.$[chat].last_read_message_id",  message.Id}}}}
+	arrayFilter := options.ArrayFilters{Filters: []interface{}{bson.M{"chat.chatid": message.ChatId}}}
+	opts := options.UpdateOptions{ArrayFilters: &arrayFilter}
+
+	result, err := userCollection.UpdateOne(context.TODO(), filter, update, &opts)
+	if err != nil {
+		log.Error("Error updating user chats: ", err)
+		return false
+	}
+	log.Infof("Pushed new chat for %v user: %v", result.ModifiedCount, username)
+	return true
 }
 
 func CloseConnection() {

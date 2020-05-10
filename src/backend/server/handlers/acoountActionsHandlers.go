@@ -16,14 +16,14 @@ func	SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Error("Can't read request body for login: ", err)
+			log.Error("Can't read request body for signup: ", err)
 			return
 		}
 
 		userData := &structs.User{}
 		err = json.Unmarshal(requestData, userData)
 		if err != nil {
-			log.Error("Can't parse request body for login: ", err)
+			log.Error("Can't parse request body for signup: ", err)
 			return
 		}
 

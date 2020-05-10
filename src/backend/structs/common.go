@@ -1,9 +1,7 @@
 package structs
 
-import "sync"
-
 type User struct {
-	mut					sync.Mutex
+	Id					int			`json:"-" bson:"-"`
 	Username			string		`json:"username"`
 	Email				string		`json:"email"`
 	Password			string		`json:"password,omitempty"`
@@ -16,13 +14,13 @@ type Chat struct {
 	Usernames			[]string	`json:"usernames" bson:"usernames"`
 	Admin				string		`json:"admin" bson:"admin"`
 	MessagePoolId		string		`json:"-" bson:"messagepoolid"`
-	//Messages			[]string	`json:"messages" bson:"-"`
+	LastReadMessageId	string		`json:"lastReadMessageId" bson:"last_read_message_id"`
 }
 
 type Message struct {
+	Id					string		`json:"id" bson:"id"`
 	Sender				string		`json:"sender" bson:"sender"`
-	ChatId				string		`json:"chat_id" bson:"chatid"`
-	IsRead				bool		`json:"is_read" bson:"isread"`
+	ChatId				string		`json:"chat_id" bson:"-"`
 	Date				int			`json:"date" bson:"date"`
 	State				int			`json:"state" bson:"state"`
 	Text				string		`json:"text" bson:"text"`

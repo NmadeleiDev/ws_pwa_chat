@@ -1,27 +1,25 @@
 <template>
     <b-container>
-        <MobileSidebar :user-data="user"
-                       :new-users="newUsers"
-                       v-on:chat="setExistingChat($event.data)"
+        <MobileSidebar
                        v-on:contact="setNewChat($event.data)"
         ></MobileSidebar>
         <b-button squared class="position-fixed fixed-top" variant="primary" v-b-toggle.sidebar-1>Меню</b-button>
         <b-row>
             <b-col>
-                <h4>Чат {{ chosenChat.usernames.join(", ") }}</h4>
+                <h4>Чат {{ chatName }}</h4>
             </b-col>
         </b-row>
         <b-row>
             <b-col>
-                <div id="messages-cont" class="messages-container">
-                    <div v-for="message in chosenChatMessages" :key="message.date" :class="(message.sender === user.username ? 'right-message' : 'left-message') + ' message-container'">
+                <div id="messages-cont" class="messages-container overflow-auto" v-if="chosenChatMessages !== null">
+                    <div v-for="message in chosenChatMessages.concat([]).reverse()" :key="message.date" :class="(message.sender === user.username ? 'right-message' : 'left-message') + ' message-container'">
                         <div class="message-header">
                             <div class="message-sender">
                                 {{ message.sender }}
                             </div>
                             <div class="message-date"> {{ convertToDatetime(message.date) }} </div>
                         </div>
-                        <div class="message-text">{{ message.text }}</div>
+                        <div :class="message.state === 1 ? 'message-sent' : (message.state === 2 ? 'message-delivered' : 'message-read') + ' message-text'">{{ message.text }}</div>
                     </div>
                 </div>
             </b-col>
@@ -42,24 +40,15 @@
 </template>
 
 <script>
-    import MobileSidebar from "../components/MobileSidebar";
+    import MobileSidebar from "../components/ModileSideBar/MobileSidebar";
 
     export default {
         name: "Chat",
         components: {MobileSidebar},
         data() {
             return {
-                chosenChat: {
-                    chat_id: null,
-                    name: '',
-                    usernames: [],
-                    admin: '',
-                    meta: 0,
-                },
-                messages: [],
                 messageText: '',
-                findUserText: '',
-                showSidebar: false,
+                findUserText: ''
             }
         },
         created() {
@@ -68,26 +57,15 @@
             this.connection = this.setConnection();
         },
         mounted() {
-            let messageCont = document.getElementById("messages-cont");
-            messageCont.scrollTop = messageCont.scrollHeight;
+            this.$store.dispatch("SET_SIDEBAR_OPENED_STATE", true);
         },
         beforeDestroy() {
             this.$disconnect();
         },
         methods: {
             sendMessage() {
-                // const message = {
-                //     sender: this.user.username,
-                //     chat_id: this.chosenChat.chat_id,
-                //     meta: this.chosenChat.meta,
-                //     date: Date.now(),
-                //     state: 0,
-                //     text: this.messageText,
-                //     attached_file_path: null,
-                // };
                 this.$store.dispatch("SEND_MESSAGE", this.messageText);
                 this.messageText = "";
-                // this.messages.push(message);
             },
             setConnection() {
                 this.$connect();
@@ -95,27 +73,14 @@
                 this.$options.sockets.onmessage = (data) => {
                     let message = JSON.parse(data.data);
                     this.$store.dispatch("RECEIVE_MESSAGE", message);
-                    // this.messages.push(message);
                     let messageCont = document.getElementById("messages-cont");
                     messageCont.scrollTop = messageCont.scrollHeight;
                 };
             },
-            setExistingChat(contactItem) {
-                this.chosenChat = contactItem;
-                this.chosenChat.meta = null;
-                this.$store.dispatch("CHANGE_CURRENT_CHAT", contactItem.chat_id);
-            },
-            setNewChat(recipientName) {
-                this.chosenChat = {
-                    chat_id: null,
-                    name: recipientName.username,
-                    usernames: [recipientName.username, this.user.username],
-                    admin: this.user.username,
-                    meta: recipientName.username,
-                };
-                this.messages = [];
+            setNewChat(recipient) {
                 this.$store.dispatch("CHANGE_CURRENT_CHAT", null);
-                this.$store.dispatch("CHANGE_NEW_CONTACT_NAME", recipientName.username);
+                this.$store.dispatch("CHANGE_NEW_CONTACT_NAME", recipient.username);
+                this.$store.dispatch("SET_SIDEBAR_OPENED_STATE", false);
             },
             convertToDatetime(timestamp) {
                 const date = new Date(timestamp);
@@ -142,12 +107,20 @@
                         (this.user.contacts == null ? true : !this.user.contacts.includes(item.username))
                 });
             },
-            chosenChatMessages() {
-                let messageCont = document.getElementById("messages-cont");
-                if (messageCont !== null)
-                    messageCont.scrollTop = messageCont.scrollHeight;
-                return this.$store.getters.GET_MESSAGES;
+            chosenChatMessages: {
+                get() {
+                    let messageCont = document.getElementById("messages-cont");
+                    if (messageCont !== null)
+                        messageCont.scrollTop = messageCont.scrollHeight;
+                    return this.$store.getters.GET_MESSAGES;
+                },
+                set() {
+
+                }
             },
+            chatName() {
+                return this.$store.getters.GET_CHAT_NAME;
+            }
         },
     }
 </script>
@@ -159,13 +132,15 @@
     }
 
     .messages-container {
-        max-height: 100%;
-        overflow-x: hidden;
-        overflow-x: auto;
         display: flex;
-        flex-direction: column;
-        padding-bottom: 2em;
+        flex-direction: column-reverse;
+        height: 30rem;
     }
+
+    .custom-overflow {
+        overflow-x: auto;
+    }
+
 
     .chatroom-container {
         margin: 0 auto;
@@ -276,9 +251,17 @@
     }
 
     .message-text {
-        background-color: #ffd46f;
         padding: 5px;
         width: 100%;
+    }
+    .message-sent {
+        background-color: #c9c9c9;
+    }
+    .message-delivered {
+        background-color: #a5d4ff;
+    }
+    .message-read {
+        background-color: #9dffbe;
     }
 
 
