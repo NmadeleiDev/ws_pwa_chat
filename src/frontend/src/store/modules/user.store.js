@@ -119,6 +119,16 @@ const user = {
                     console.log("Unknown message type: ", socketMessage)
             }
         },
+        LEAVE_CHAT: (context, payload) => {
+            api.post("leave", payload).then(response => {
+                    if (response.status === false) {
+                        console.log("Error leaving chat");
+                    } else {
+                        location.reload();
+                    }
+                }
+            )
+        }
     },
     getters: {
         GET_USER: state => {

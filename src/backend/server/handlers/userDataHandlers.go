@@ -175,3 +175,35 @@ func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 		utils.SendSuccessResponse(w)
 	}
 }
+
+func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
+	if r.Method == http.MethodPost {
+		var chat structs.Chat
+		sessionKey := utils.GetCookieValue(r, "session_id")
+		userData, err := postgres.GetUserNameAndId(sessionKey)
+		if err != nil {
+			log.Error("Error getting user data from postgres: ", err)
+			utils.SendFailResponse(w)
+			return
+		}
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		err = json.Unmarshal(requestData, &chat)
+		if err != nil {
+			log.Error("Can't parse request body for login: ", err)
+			return
+		}
+		if !mongodb.DeleteChatFromUserChats(chat, userData.Username) {
+			utils.SendFailResponse(w)
+			return
+		}
+		if !mongodb.DeleteUserFromChatMembers(chat.ChatId, userData.Username) {
+			utils.SendFailResponse(w)
+			return
+		}
+		utils.SendSuccessResponse(w)
+	}
+}

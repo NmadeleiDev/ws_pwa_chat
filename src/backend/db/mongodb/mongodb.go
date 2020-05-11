@@ -246,6 +246,27 @@ func AddUserToChatMembers(chatId string, user structs.User) bool {
 	return true
 }
 
+func DeleteUserFromChatMembers(chatId string, username string) bool {
+	database := client.Database("user")
+	chatsCollection := database.Collection("chats")
+
+	objectId, err := primitive.ObjectIDFromHex(chatId)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided chat id: %v", err, chatId)
+		return false
+	}
+	filter := bson.D{{"_id", objectId}}
+	update := bson.D{{"$pull", bson.D{{"usernames", username}}}}
+
+	result, err := chatsCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Error("Error deleting user from chat: ", err)
+		return false
+	}
+	log.Infof("deleted %v user %v from chat: %v", result.ModifiedCount, username, chatId)
+	return true
+}
+
 func AddChatToUserChats(chat structs.Chat, username string) bool {
 	database := client.Database("user")
 	userCollection := database.Collection("users")
@@ -259,6 +280,22 @@ func AddChatToUserChats(chat structs.Chat, username string) bool {
 		return false
 	}
 	log.Infof("Pushed new chat for %v user: %v", result.ModifiedCount, username)
+	return true
+}
+
+func DeleteChatFromUserChats(chat structs.Chat, username string) bool {
+	database := client.Database("user")
+	userCollection := database.Collection("users")
+
+	filter := bson.D{{"username", username}}
+	update := bson.D{{"$pull", bson.D{{"chats", bson.D{{"chatid", chat.ChatId}}}}}}
+
+	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Error("Error deleting user chat: ", err)
+		return false
+	}
+	log.Infof("deleted chat for %v user: %v", result.ModifiedCount, username)
 	return true
 }
 

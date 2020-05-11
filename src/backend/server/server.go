@@ -23,6 +23,7 @@ func StartServer(port string) {
 	router.HandleFunc("/all_users", handlers.GetAllUsersHandler)
 	router.HandleFunc("/name", handlers.SaveChatNameHandler)
 	router.HandleFunc("/add", handlers.AddUserToChatHandler)
+	router.HandleFunc("/leave", handlers.LeaveChatHandler)
 	router.HandleFunc("/messages/{chatId}", handlers.GetChatMessagesHandler)
 
 	router.HandleFunc("/last", handlers.UpdateLastReadMessageHandler)

@@ -38,6 +38,9 @@
                     </b-list-group>
                 </b-collapse>
             </div>
+            <div>
+                <b-button @click="leaveChat" variant="outline-danger">Leave chat</b-button>
+            </div>
         </div>
     </b-modal>
 </template>
@@ -69,6 +72,9 @@
             emitContact(contact) {
                 this.$emit('contact', {data: contact});
             },
+            leaveChat() {
+                this.$store.dispatch("LEAVE_CHAT", this.openedChat);
+            }
         },
         computed: {
             isOpened: {
