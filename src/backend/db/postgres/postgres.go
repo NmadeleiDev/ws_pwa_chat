@@ -19,6 +19,7 @@ import (
 
 const (
 	userDataTable = "ws_chat.users"
+	poolsDataTable = "ws_chat.pools"
 	hashCost = 14
 )
 
@@ -61,8 +62,21 @@ func InitTables() {
     username      varchar(64)  not null,
     password      varchar(255) not null,
     email_address varchar(128) default NULL::character varying,
-    session_key   varchar(128) default NULL::character varying,
+	pool_id		  varchar(255) default ''::character varying,
+    session_key   varchar(128) default ''::character varying,
 	online		  boolean	   default false
+)`
+	if _, err := connection.Exec(query); err != nil {
+		log.Fatal("Error creating table: ", err)
+	}
+
+	query = `create table if not exists ` + poolsDataTable + `
+(
+    id            serial       not null
+        constraint pools_pk
+            primary key,
+    pool_id       varchar(255)  not null,
+    password      varchar(255)  not null
 )`
 	if _, err := connection.Exec(query); err != nil {
 		log.Fatal("Error creating table: ", err)
@@ -132,15 +146,15 @@ WHERE username=$1`
 	}
 }
 
-func GetUserNameAndId(sessionKey string) (user structs.User, err error) {
+func GetUserNameIdAndPool(sessionKey string) (user structs.User, err error) {
 
 	query := `
-SELECT username, id
+SELECT username, id, pool_id
 FROM ` + userDataTable + ` 
 WHERE session_key=$1`
 
 	row := connection.QueryRow(query, sessionKey)
-	err = row.Scan(&user.Username, &user.Id)
+	err = row.Scan(&user.Username, &user.Id, &user.Pool)
 	return user, err
 }
 
@@ -157,12 +171,12 @@ SET online=$1 WHERE id=$2`
 	return true
 }
 
-func GetAllUsers() ([]structs.User, error) {
+func GetAllSamePoolUsers(userPool string) ([]structs.User, error) {
 
 	var result []structs.User
 
-	query := `SELECT username FROM ` + userDataTable
-	rows, err := connection.Query(query)
+	query := `SELECT username FROM ` + userDataTable + ` WHERE pool_id=$1`
+	rows, err := connection.Query(query, userPool)
 	if err != nil {
 		log.Error("Error querying users", err)
 		return nil, err
@@ -177,7 +191,6 @@ func GetAllUsers() ([]structs.User, error) {
 	}
 	return result, nil
 }
-
 
 func SetSessionKeyById(sessionKey string, id int) bool {
 	query := `
@@ -201,6 +214,59 @@ WHERE session_key=$2`
 
 	if _, err := connection.Exec(query, new, old); err != nil {
 		log.Error("Error updating session key: ",err)
+		return false
+	}
+	return true
+}
+
+func CreatePool(pool structs.Pool) bool {
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(pool.Password), hashCost)
+	if err != nil {
+		log.Error("Error hashing password", err)
+		return false
+	}
+
+	query := `
+INSERT INTO ` + poolsDataTable + `(pool_id, password) 
+VALUES ($1, $2)`
+
+	if _, err := connection.Exec(query, pool.PoolId, passwordHash); err != nil {
+		log.Error("Error inserting pool: ",err)
+		return false
+	}
+	return true
+}
+
+func TryPoolSignIn(pool structs.Pool) bool {
+	var truePassword string
+
+	query := `
+SELECT password
+FROM ` + poolsDataTable + `
+WHERE pool_id=$1`
+
+	row := connection.QueryRow(query, pool.PoolId)
+	if err := row.Scan(&truePassword); err != nil {
+		log.Error("Error getting pool password: ", err)
+		return false
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(truePassword), []byte(pool.Password)); err != nil {
+		log.Error("Error verifying password: ", err)
+		return false
+	}
+	return true
+}
+
+func UpdateUserPoolId(user structs.User, pool structs.Pool) bool {
+	query := `
+UPDATE ` + userDataTable + `
+SET pool_id=$1
+WHERE username=$2`
+
+	_, err := connection.Exec(query, pool.PoolId, user.Username)
+	if err != nil {
+		log.Error("error updating user pool id: ", err)
 		return false
 	}
 	return true

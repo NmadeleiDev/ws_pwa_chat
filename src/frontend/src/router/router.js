@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import Login from "../pages/Login";
-import Chat from "../pages/Chat";
+import Login from "../pages/login/Login";
+import Chat from "../pages/chat/Chat";
 
 Vue.use(VueRouter);
 

@@ -26,6 +26,7 @@ const user = {
             messages: [],
             lastReadMessageId: '',
         }],
+        poolId: '',
     }),
     mutations: {
         SET_USER: (state, payload) => {
@@ -69,6 +70,9 @@ const user = {
         },
         SET_CHAT_LAST_READ_MESSAGE_ID (state, message) {
             state.chats.find(item => item.chat_id === message.chat_id).lastReadMessageId = message.id;
+        },
+        SET_USER_POOL_ID (state, poolId) {
+            state.poolId = poolId;
         }
     },
     actions: {
@@ -128,7 +132,19 @@ const user = {
                     }
                 }
             )
-        }
+        },
+        TRY_JOIN_POOL: (context, payload) => {
+            api.post('pool_join', payload).then(response => {
+                    if (response.status === false) {
+                        console.log("Error joining pool");
+                    } else {
+                        context.commit("SET_USER_POOL_ID", payload.poolId);
+                        context.dispatch("LOAD_ALL_USERS");
+                    }
+                    return response.status;
+                }
+            )
+        },
     },
     getters: {
         GET_USER: state => {

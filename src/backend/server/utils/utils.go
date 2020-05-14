@@ -14,7 +14,7 @@ const (
 
 func ValidateRequest(w http.ResponseWriter, r *http.Request) bool {
 	sessionKey := GetCookieValue(r, "session_id")
-	_, err := postgres.GetUserNameAndId(sessionKey)
+	_, err := postgres.GetUserNameIdAndPool(sessionKey)
 	if err != nil {
 		log.Error("Error getting user data from postgres: ", err)
 		SendFailResponse(w)

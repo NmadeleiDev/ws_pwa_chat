@@ -31,7 +31,7 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
 	}
 	sessionKey := utils.GetCookieValue(r, "session_id")
 
-	userData, err := postgres.GetUserNameAndId(sessionKey)
+	userData, err := postgres.GetUserNameIdAndPool(sessionKey)
 	if err != nil {
 		log.Error("Error getting user data from postgres: ", err)
 		return

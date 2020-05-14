@@ -3,6 +3,7 @@
         <MobileSidebar
                        v-on:contact="setNewChat($event.data)"
         ></MobileSidebar>
+        <EnterPoolModal></EnterPoolModal>
         <b-button squared class="position-fixed fixed-top" variant="primary" v-b-toggle.sidebar-1>Меню</b-button>
         <b-row>
             <b-col>
@@ -40,11 +41,12 @@
 </template>
 
 <script>
-    import MobileSidebar from "../components/ModileSideBar/MobileSidebar";
+    import MobileSidebar from "../../components/ModileSideBar/MobileSidebar";
+    import EnterPoolModal from "./common/EnterPoolModal";
 
     export default {
         name: "Chat",
-        components: {MobileSidebar},
+        components: {EnterPoolModal, MobileSidebar},
         data() {
             return {
                 messageText: '',

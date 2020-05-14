@@ -17,7 +17,7 @@ func	GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		sessionKey := utils.GetCookieValue(r, "session_id")
 
-		userData, err := postgres.GetUserNameAndId(sessionKey)
+		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
 		if err != nil {
 			log.Error("Error getting user data from postgres: ", err)
 			utils.SendFailResponse(w)
@@ -81,10 +81,14 @@ func	GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 func	GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
-		if !utils.ValidateRequest(w, r) {
+		sessionKey := utils.GetCookieValue(r, "session_id")
+		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
+		if err != nil {
+			log.Error("Error getting user data from postgres: ", err)
+			utils.SendFailResponse(w)
 			return
 		}
-		users, err := postgres.GetAllUsers()
+		users, err := postgres.GetAllSamePoolUsers(userData.Pool)
 		if err != nil {
 			log.Error("Error getting messages: ", err)
 			utils.SendFailResponse(w)
@@ -152,7 +156,7 @@ func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var message structs.Message
 		sessionKey := utils.GetCookieValue(r, "session_id")
-		userData, err := postgres.GetUserNameAndId(sessionKey)
+		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
 		if err != nil {
 			log.Error("Error getting user data from postgres: ", err)
 			utils.SendFailResponse(w)
@@ -180,7 +184,7 @@ func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
 	if r.Method == http.MethodPost {
 		var chat structs.Chat
 		sessionKey := utils.GetCookieValue(r, "session_id")
-		userData, err := postgres.GetUserNameAndId(sessionKey)
+		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
 		if err != nil {
 			log.Error("Error getting user data from postgres: ", err)
 			utils.SendFailResponse(w)
@@ -205,5 +209,58 @@ func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
 			return
 		}
 		utils.SendSuccessResponse(w)
+	}
+}
+
+func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var pool structs.Pool
+		sessionKey := utils.GetCookieValue(r, "session_id")
+		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
+		if err != nil {
+			log.Error("Error getting user data from postgres: ", err)
+			utils.SendFailResponse(w)
+			return
+		}
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		err = json.Unmarshal(requestData, &pool)
+		if err != nil {
+			log.Error("Can't parse request body for login: ", err)
+			return
+		}
+		if postgres.TryPoolSignIn(pool) {
+			if postgres.UpdateUserPoolId(userData, pool) {
+				utils.SendSuccessResponse(w)
+			} else {
+				utils.SendFailResponse(w)
+			}
+		} else {
+			utils.SendFailResponse(w)
+		}
+	}
+}
+
+func CreatePoolHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var pool structs.Pool
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		err = json.Unmarshal(requestData, &pool)
+		if err != nil {
+			log.Error("Can't parse request body for login: ", err)
+			return
+		}
+		if postgres.CreatePool(pool) {
+			utils.SendSuccessResponse(w)
+		} else {
+			utils.SendFailResponse(w)
+		}
 	}
 }

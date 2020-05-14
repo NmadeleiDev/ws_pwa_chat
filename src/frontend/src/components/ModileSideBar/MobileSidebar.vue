@@ -1,5 +1,6 @@
 <template>
     <b-sidebar width="380px" id="sidebar-1" :visible="isOpened" :title="userData.username + ' menu'"
+               :no-header-close="isNoHeader"
                shadow
                backdrop>
         <b-container class="p-0">
@@ -99,6 +100,9 @@
                 },
                 set() {
                 }
+            },
+            isNoHeader() {
+                return this.$store.getters.IS_INTERFACE_EMPTY;
             }
         }
     }

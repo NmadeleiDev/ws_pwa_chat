@@ -147,6 +147,9 @@ const operational = {
                 }
             )
         },
+        CREATE_POOL: (context, payload) => {
+            return api.post('pool', payload);
+        },
     },
     getters: {
         GET_CURRENT_CHAT_ID: state => {
@@ -154,6 +157,10 @@ const operational = {
         },
         GET_NEW_CONTACT_NAME: state => {
             return state.newContactName;
+        },
+        // используется при первом заходе на страницу, чтобы не дать закрыть sidebar, пока не выбран чат
+        IS_INTERFACE_EMPTY: state => {
+            return state.newContactName.length === 0 && state.currentChatId === 0;
         }
     }
 }

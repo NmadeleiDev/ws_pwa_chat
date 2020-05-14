@@ -25,8 +25,11 @@ func StartServer(port string) {
 	router.HandleFunc("/add", handlers.AddUserToChatHandler)
 	router.HandleFunc("/leave", handlers.LeaveChatHandler)
 	router.HandleFunc("/messages/{chatId}", handlers.GetChatMessagesHandler)
-
 	router.HandleFunc("/last", handlers.UpdateLastReadMessageHandler)
+
+	router.HandleFunc("/pool_join", handlers.JoinUserToPool)
+	router.HandleFunc("/pool", handlers.CreatePoolHandler)
+
 
 	// ws handlers
 	router.HandleFunc("/connect", handlers.ChatSocketHandler)

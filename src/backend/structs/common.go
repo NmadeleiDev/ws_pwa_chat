@@ -6,6 +6,7 @@ type User struct {
 	Email				string		`json:"email"`
 	Password			string		`json:"password,omitempty"`
 	Chats				[]Chat		`json:"chats"`
+	Pool				string		`json:"poolId" json:"-"`
 }
 
 type Chat struct {
@@ -26,4 +27,9 @@ type Message struct {
 	Text				string		`json:"text" bson:"text"`
 	Meta				int			`json:"meta" bson:"-"`
 	AttachedFilePath	string		`json:"attached_file_path" bson:"attachedfilepath"`
+}
+
+type Pool struct {
+	PoolId				string		`json:"poolId"`
+	Password			string		`json:"password"`
 }
