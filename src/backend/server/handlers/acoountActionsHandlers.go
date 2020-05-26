@@ -37,7 +37,9 @@ func	SignUpHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		utils.RefreshRequestSessionKeyCookie(w, *userData)
+		if utils.RefreshRequestSessionKeyCookie(w, *userData) {
+			utils.SendSuccessResponse(w)
+		}
 	}
 }
 
@@ -57,7 +59,9 @@ func	SignInHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		utils.RefreshRequestSessionKeyCookie(w, *userData)
+		if utils.RefreshRequestSessionKeyCookie(w, *userData) {
+			utils.SendSuccessResponse(w)
+		}
 	}
 }
 
@@ -90,6 +94,7 @@ func	UnregisterHandler(w http.ResponseWriter, r *http.Request) {
 
 		if utils.RefreshRequestSessionKeyCookie(w, *userData) {
 			postgres.DeleteUser(*userData)
+			utils.SendSuccessResponse(w)
 			// TODO mongo.DeleteUser
 		} else {
 			log.Error("Looks like unverified attempt to delete account... User: ", userData)

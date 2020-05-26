@@ -3,9 +3,14 @@ package utils
 import (
 	"chat_backend/db/postgres"
 	"chat_backend/structs"
+	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/json"
-	"net/http"
+	"fmt"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
+	"net/http"
+	"time"
 )
 
 const (
@@ -21,6 +26,23 @@ func ValidateRequest(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+func GenerateSecret(user structs.User) string {
+	secretString := user.Username + "_hey_" + time.Now().String() + string(rand.Int63())
+	return CalculateSha1(secretString)
+}
+
+func CalculateSha256(value string) string {
+	sha256Calculate := sha256.Sum256([]byte(value))
+	hash := fmt.Sprintf("%x", sha256Calculate)
+	return hash
+}
+
+func CalculateSha1(value string) string {
+	sha256Calculate := sha1.Sum([]byte(value))
+	hash := fmt.Sprintf("%x", sha256Calculate)
+	return hash
 }
 
 func SetCookie(w http.ResponseWriter, cookieName, value string) {
@@ -84,8 +106,6 @@ func SendDataResponse(w http.ResponseWriter, data interface{}) {
 }
 
 func RefreshRequestSessionKeyCookie(w http.ResponseWriter, user structs.User) bool {
-	var packet	[]byte
-
 	sessionKey, err := postgres.IssueUserSessionKey(user)
 
 	if err != nil {
@@ -94,13 +114,5 @@ func RefreshRequestSessionKeyCookie(w http.ResponseWriter, user structs.User) bo
 	}
 
 	SetCookie(w, "session_id", sessionKey)
-
-	response := &structs.HttpResponse{Status: true, Data:nil}
-	if packet, err = json.Marshal(response); err != nil {
-		log.Error("Error marshalling response: ", err)
-	}
-	if _, err = w.Write(packet); err != nil {
-		log.Error("Error sending response: ", err)
-	}
 	return true
 }

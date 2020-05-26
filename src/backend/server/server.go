@@ -2,6 +2,7 @@ package server
 
 import (
 	"chat_backend/server/handlers"
+	"chat_backend/server/mobileHandlers"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -12,8 +13,8 @@ func StartServer(port string) {
 	router := mux.NewRouter()
 
 	// user account handlers
-	router.HandleFunc("/signup", handlers.SignUpHandler)
-	router.HandleFunc("/signin", handlers.SignInHandler)
+	router.HandleFunc("/signup", mobileHandlers.SignUpHandler)
+	router.HandleFunc("/signin", mobileHandlers.SignInHandler)
 	router.HandleFunc("/signout", handlers.SignOutHandler)
 	router.HandleFunc("/unregister", handlers.UnregisterHandler)
 

@@ -6,7 +6,8 @@ type User struct {
 	Email				string		`json:"email"`
 	Password			string		`json:"password,omitempty"`
 	Chats				[]Chat		`json:"chats"`
-	Pool				string		`json:"poolId" json:"-"`
+	Pool				string		`json:"poolId" bson:"-"`
+	SecretHash			string		`json:"secret_hash" bson:"-"`
 }
 
 type Chat struct {

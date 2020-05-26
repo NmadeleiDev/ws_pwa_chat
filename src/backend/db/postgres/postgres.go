@@ -64,6 +64,7 @@ func InitTables() {
     email_address varchar(128) default NULL::character varying,
 	pool_id		  varchar(255) default ''::character varying,
     session_key   varchar(128) default ''::character varying,
+	session_secret varchar(255) default ''::character varying,
 	online		  boolean	   default false
 )`
 	if _, err := connection.Exec(query); err != nil {
@@ -118,8 +119,8 @@ func CreateUser(user structs.User) bool {
 		return false
 	}
 
-	query := `INSERT INTO ` + userDataTable + ` (username, password, email_address) VALUES ($1, $2, $3)`
-	_, err = connection.Exec(query, user.Username, passwordHash, user.Email)
+	query := `INSERT INTO ` + userDataTable + ` (username, password, email_address, session_secret) VALUES ($1, $2, $3, $4)`
+	_, err = connection.Exec(query, user.Username, passwordHash, user.Email, user.SecretHash)
 
 	if err != nil {
 		log.Error("Error registering user", err)
@@ -201,6 +202,19 @@ WHERE id=$2`
 	if _, err := connection.Exec(query, sessionKey, id); err != nil {
 		log.Error("Error setting session key: ", err)
 		log.Error("Key: ", sessionKey, " ID: ", id)
+		return false
+	}
+	return true
+}
+
+func SetUserSecret(user structs.User) bool {
+	query := `
+UPDATE ` + userDataTable + ` 
+SET session_secret=$1
+WHERE username=$2`
+
+	if _, err := connection.Exec(query, user.SecretHash, user.Username); err != nil {
+		log.Error("Error setting session key: ", err)
 		return false
 	}
 	return true
