@@ -1,0 +1,36 @@
+{
+  "nativescript": {
+    "id": "org.nativescript.mobilechat",
+    "tns-android": {
+      "version": "6.5.0"
+    },
+    "tns-ios": {
+      "version": "6.5.0"
+    }
+  },
+  "description": "NativeScript Application",
+  "license": "SEE LICENSE IN <your-license-filename>",
+  "repository": "<fill-your-repository-here>",
+  "dependencies": {
+    "@nativescript/theme": "~2.3.3",
+    "axios": "^0.19.2",
+    "js-sha256": "^0.9.0",
+    "md5": "^2.2.1",
+    "nativescript-sqlite": "^2.6.3",
+    "nativescript-ui-sidedrawer": "~8.0.0",
+    "nativescript-vue": "~2.5.0",
+    "rxjs": "^6.4.0",
+    "tns-core-modules": "~6.5.0",
+    "vuex": "^3.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "~7.1.0",
+    "@babel/preset-env": "~7.1.0",
+    "babel-loader": "~8.0.0",
+    "nativescript-dev-webpack": "~1.5.1",
+    "nativescript-vue-template-compiler": "~2.5.0",
+    "vue-loader": "~15.9.0"
+  },
+  "gitHead": "2250137db8c1e0bd0eb543e8e4563cb71480c00d",
+  "readme": "NativeScript Application"
+}
