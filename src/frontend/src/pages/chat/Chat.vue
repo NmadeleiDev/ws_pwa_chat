@@ -54,8 +54,8 @@
             }
         },
         created() {
-            this.$store.dispatch("LOAD_USER_DATA");
-            this.$store.dispatch("LOAD_ALL_USERS");
+            this.$store.dispatch("LOAD_USER_DATA").catch((e) => console.log(e));
+            this.$store.dispatch("LOAD_ALL_USERS").catch((e) => console.log(e));
             this.connection = this.setConnection();
         },
         mounted() {

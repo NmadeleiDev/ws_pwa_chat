@@ -17,7 +17,7 @@ const get = async function (path) {
 const post = async function (path, data = null) {
     const uri = getRequestUri(path);
 
-    let response = await axios.post(uri, data);
+    let response = await axios.post(uri, {data: data});
 
     if (response.data.status !== true) {
         console.log("failed response: ", response);

@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"chat_backend/client"
-	"chat_backend/db/mongodb"
-	"chat_backend/db/postgres"
+	"chat_backend/db/mainDataStorage"
+	"chat_backend/db/userKeysData"
 	"chat_backend/server/utils"
+	"chat_backend/structs"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -29,21 +30,19 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
 		log.Error("Error establishing ws connection: ", err)
 		return
 	}
-	sessionKey := utils.GetCookieValue(r, "session_id")
-
-	userData, err := postgres.GetUserNameIdAndPool(sessionKey)
-	if err != nil {
-		log.Error("Error getting user data from postgres: ", err)
+	id, ok := utils.IdentifyWebOrMobileRequest(r)
+	if !ok {
+		utils.SendFailResponse(w, "Unauthorized request")
 		return
 	}
-	err = mongodb.FillUserData(&userData)
-	if err != nil {
-		log.Error("Error getting user data from mongo: ", err)
+	user := &structs.User{Id: id}
+	if !mainDataStorage.Manager.FillUserData(user) {
+		log.Error("Failed to get user data from mongo.")
 		return
 	}
-	go postgres.ToggleUserOnlineState(userData.Id, true)
+	go userKeysData.Manager.ToggleUserOnlineState(user.Id, true)
 
-	clientStruct := client.CreateNewClient(connection, &userData)
+	clientStruct := client.CreateNewClient(connection, user)
 	clientStruct.SubscribeToDBEvents()
 	go clientStruct.ReadHub()
 	go clientStruct.WriteHub()

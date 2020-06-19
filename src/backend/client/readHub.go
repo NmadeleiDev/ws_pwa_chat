@@ -1,7 +1,7 @@
 package client
 
 import (
-	"chat_backend/db/mongodb"
+	"chat_backend/db/mainDataStorage"
 	"chat_backend/structs"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -51,11 +51,11 @@ func	(client *Client) ReadHub() {
 					switch messageStruct.Type {
 					case InsertMessage:
 						messageStruct.Message.State = MessageDelivered
-						go mongodb.WriteNewMessage(chat.MessagePoolId, messageStruct.Message)
+						go mainDataStorage.Manager.WriteNewMessage(chat.MessagePoolId, messageStruct.Message)
 					case UpdateMessage:
-						go mongodb.UpdateMessage(chat.MessagePoolId, messageStruct.Message)
+						go mainDataStorage.Manager.UpdateMessage(chat.MessagePoolId, messageStruct.Message)
 					case DeleteMessage:
-						go mongodb.DeleteMessage(chat.MessagePoolId, messageStruct.Message)
+						go mainDataStorage.Manager.DeleteMessage(chat.MessagePoolId, messageStruct.Message)
 					default:
 						log.Warn("Unknown message type: ", messageStruct)
 					}

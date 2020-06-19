@@ -1,7 +1,7 @@
 package client
 
 import (
-	"chat_backend/db/postgres"
+	"chat_backend/db/userKeysData"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -19,7 +19,7 @@ func	(client *Client) WriteHub() {
 		}
 		close(client.ReadMessageChan)
 		close(client.ClientExitChan)
-		go postgres.ToggleUserOnlineState(client.User.Id, false)
+		go userKeysData.Manager.ToggleUserOnlineState(client.User.Id, false)
 	}()
 
 	for {

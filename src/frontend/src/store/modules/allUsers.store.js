@@ -12,11 +12,15 @@ const allUsers = {
         },
     },
     actions: {
-        LOAD_ALL_USERS: (context) => {
-            const response = api.get("all_users");
-            response.then(data => {
-                context.commit("SET_ALL_USERS", data.data);
-            });
+        LOAD_ALL_USERS: async (context) => {
+            try {
+                const response = await api.get("all_users");
+                context.commit("SET_ALL_USERS", response.data);
+                return true;
+            } catch (e) {
+                console.log(e);
+                return false;
+            }
         },
     },
     getters: {

@@ -18,9 +18,11 @@ import (
 	"time"
 )
 
-var client *mongo.Client
+type MongoMainDataStorage struct {
+	client *mongo.Client
+}
 
-func MakeConnection() {
+func (db *MongoMainDataStorage) MakeConnection() {
 	var err error
 	user := os.Getenv("MONGO_USER")
 	password := os.Getenv("MONGO_PASSWORD")
@@ -33,22 +35,22 @@ func MakeConnection() {
 	connStr := fmt.Sprintf("mongodb://%v:%v@%v", user, password, addr)
 	log.Info("Connecting to mongo: ", connStr)
 	opts := options.Client().ApplyURI(connStr).SetReplicaSet("rs0")
-	client, err = mongo.Connect(context.TODO(), opts)
+	db.client, err = mongo.Connect(context.TODO(), opts)
 	if err != nil {
 		log.Fatal("Error getting client mongo: ", err)
 	}
 	if err != nil {
 		log.Fatal("Error connecting to mongo: ", err)
 	}
-	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
+	if err = db.client.Ping(context.TODO(), readpref.Primary()); err != nil {
 		log.Fatal("Error pinging: ", err)
 	}
 	log.Info("Connected.")
 }
 
-func CreateUser(user structs.User) bool {
+func (db *MongoMainDataStorage) CreateUser(user structs.User) (id string, ok bool) {
 
-	database := client.Database("user")
+	database := db.client.Database("user")
 	userCollection := database.Collection("users")
 
 	user.Chats = make([]structs.Chat, 0)
@@ -56,32 +58,39 @@ func CreateUser(user structs.User) bool {
 	// I don't need to store password in mongo
 	user.Password = ""
 
-	_, err := userCollection.InsertOne(context.TODO(), user)
+	res, err := userCollection.InsertOne(context.TODO(), user)
 	if err != nil {
 		log.Error("Error creating user in mongo: ", err)
-		return false
+		return "", false
 	}
-	return true
+	return res.InsertedID.(primitive.ObjectID).Hex(), true
 }
 
-func FillUserData(user *structs.User) error {
+func (db *MongoMainDataStorage) FillUserData(user *structs.User) bool {
 
-	database := client.Database("user")
+	database := db.client.Database("user")
 	userCollection := database.Collection("users")
 
-	filter := bson.M{"username": user.Username}
+	objectId, err := primitive.ObjectIDFromHex(user.Id)
+	if err != nil {
+		log.Errorf("error creating objectId from user id: %v", err)
+		return false
+	}
+
+	filter := bson.M{"_id": objectId}
 	container := structs.User{}
-	err := userCollection.FindOne(context.Background(),filter).Decode(&container)
+	err = userCollection.FindOne(context.Background(),filter).Decode(&container)
 	if  err != nil {
 		log.Error("Error finding user document: ", err)
-		return err
+		return false
 	} else {
 		log.Info("Got user document: ", container)
 	}
+	user.Username = container.Username
 	user.Chats = container.Chats
 
 	for i, chat := range user.Chats {
-		container, err := GetChatDataById(chat.ChatId)
+		container, err := db.GetChatDataById(chat.ChatId)
 		if err != nil {
 			continue
 		}
@@ -89,11 +98,11 @@ func FillUserData(user *structs.User) error {
 		user.Chats[i] = container
 	}
 
-	return err
+	return true
 }
 
-func GetChatDataById(chatId string) (structs.Chat, error) {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) GetChatDataById(chatId string) (structs.Chat, error) {
+	database := db.client.Database("user")
 	chatCollection := database.Collection("chats")
 	objectId, err := primitive.ObjectIDFromHex(chatId)
 	if err != nil {
@@ -111,12 +120,12 @@ func GetChatDataById(chatId string) (structs.Chat, error) {
 	return container, nil
 }
 
-func GetMessagesFromPool(chatId string) ([]structs.Message, error) {
+func (db *MongoMainDataStorage) GetMessagesFromPool(chatId string) ([]structs.Message, error) {
 
 	var chat structs.Chat
 	var messages = make([]structs.Message, 0, 20)
 
-	database := client.Database("user")
+	database := db.client.Database("user")
 	coll := database.Collection("chats")
 
 	opts := options.FindOne()
@@ -132,7 +141,7 @@ func GetMessagesFromPool(chatId string) ([]structs.Message, error) {
 		return nil, err
 	}
 
-	database = client.Database("chat")
+	database = db.client.Database("chat")
 	coll = database.Collection(chat.MessagePoolId)
 
 	optsFind := options.Find().SetSort(bson.D{{"date", 1}})
@@ -155,9 +164,9 @@ func GetMessagesFromPool(chatId string) ([]structs.Message, error) {
 	return messages, nil
 }
 
-func WriteNewMessage(messagePoolId string, message structs.Message) {
+func (db *MongoMainDataStorage) WriteNewMessage(messagePoolId string, message structs.Message) {
 
-	database := client.Database("chat")
+	database := db.client.Database("chat")
 	coll := database.Collection(messagePoolId)
 
 	message.ChatId = ""
@@ -168,9 +177,9 @@ func WriteNewMessage(messagePoolId string, message structs.Message) {
 	}
 }
 
-func UpdateMessage(messagePoolId string, message structs.Message) {
+func (db *MongoMainDataStorage) UpdateMessage(messagePoolId string, message structs.Message) {
 
-	database := client.Database("chat")
+	database := db.client.Database("chat")
 	coll := database.Collection(messagePoolId)
 
 	message.ChatId = ""
@@ -186,9 +195,9 @@ func UpdateMessage(messagePoolId string, message structs.Message) {
 	log.Infof("Updated %v document message", result.ModifiedCount)
 }
 
-func DeleteMessage(messagePoolId string, message structs.Message) {
+func (db *MongoMainDataStorage) DeleteMessage(messagePoolId string, message structs.Message) {
 
-	database := client.Database("chat")
+	database := db.client.Database("chat")
 	coll := database.Collection(messagePoolId)
 
 	message.ChatId = ""
@@ -203,9 +212,9 @@ func DeleteMessage(messagePoolId string, message structs.Message) {
 	log.Infof("Deleted %v document message", result.DeletedCount)
 }
 
-func CreateChat(newChat structs.Chat) (structs.Chat, error) {
+func (db *MongoMainDataStorage) CreateChat(newChat structs.Chat) (structs.Chat, error) {
 
-	database := client.Database("user")
+	database := db.client.Database("user")
 	chatsCollection := database.Collection("chats")
 
 	newMessagePoolId := fmt.Sprintf("%x", md5.Sum([]byte(time.Now().String() + strconv.Itoa(rand.Int()) + strings.Join(newChat.Usernames, "hi!"))))
@@ -219,14 +228,14 @@ func CreateChat(newChat structs.Chat) (structs.Chat, error) {
 	newChat.ChatId = strings.Split(res.InsertedID.(primitive.ObjectID).String(), "\"")[1]
 
 	for _, user := range newChat.Usernames {
-		AddChatToUserChats(newChat, user)
+		db.AddChatToUserChats(newChat, user)
 	}
 
 	return newChat, nil
 }
 
-func AddUserToChatMembers(chatId string, user structs.User) bool {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) AddUserToChatMembers(chatId string, user structs.User) bool {
+	database := db.client.Database("user")
 	chatsCollection := database.Collection("chats")
 
 	objectId, err := primitive.ObjectIDFromHex(chatId)
@@ -246,8 +255,8 @@ func AddUserToChatMembers(chatId string, user structs.User) bool {
 	return true
 }
 
-func DeleteUserFromChatMembers(chatId string, username string) bool {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) DeleteUserFromChatMembers(chatId string, username string) bool {
+	database := db.client.Database("user")
 	chatsCollection := database.Collection("chats")
 
 	objectId, err := primitive.ObjectIDFromHex(chatId)
@@ -267,11 +276,15 @@ func DeleteUserFromChatMembers(chatId string, username string) bool {
 	return true
 }
 
-func AddChatToUserChats(chat structs.Chat, username string) bool {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) AddChatToUserChats(chat structs.Chat, userId string) bool {
+	database := db.client.Database("user")
 	userCollection := database.Collection("users")
-
-	filter := bson.D{{"username", username}}
+	objectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided user id: %v", err, chat)
+		return false
+	}
+	filter := bson.D{{"_id", objectId}}
 	update := bson.D{{"$addToSet", bson.D{{"chats", bson.D{{"chatid", chat.ChatId}, {"messagepoolid", chat.MessagePoolId}, {"last_read_message_id", ""}}}}}}
 
 	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
@@ -279,15 +292,20 @@ func AddChatToUserChats(chat structs.Chat, username string) bool {
 		log.Error("Error updating user chats: ", err)
 		return false
 	}
-	log.Infof("Pushed new chat for %v user: %v", result.ModifiedCount, username)
+	log.Infof("Pushed new chat for %v user: %v", result.ModifiedCount, userId)
 	return true
 }
 
-func DeleteChatFromUserChats(chat structs.Chat, username string) bool {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) DeleteChatFromUserChats(chat structs.Chat, userId string) bool {
+	database := db.client.Database("user")
 	userCollection := database.Collection("users")
+	objectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided user id: %v", err, chat)
+		return false
+	}
 
-	filter := bson.D{{"username", username}}
+	filter := bson.D{{"_id", objectId}}
 	update := bson.D{{"$pull", bson.D{{"chats", bson.D{{"chatid", chat.ChatId}}}}}}
 
 	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
@@ -295,12 +313,12 @@ func DeleteChatFromUserChats(chat structs.Chat, username string) bool {
 		log.Error("Error deleting user chat: ", err)
 		return false
 	}
-	log.Infof("deleted chat for %v user: %v", result.ModifiedCount, username)
+	log.Infof("deleted chat for %v user: %v", result.ModifiedCount, userId)
 	return true
 }
 
-func EditChatName(chat structs.Chat) bool {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) EditChatName(chat structs.Chat) bool {
+	database := db.client.Database("user")
 	chatsCollection := database.Collection("chats")
 
 	objectId, err := primitive.ObjectIDFromHex(chat.ChatId)
@@ -319,11 +337,15 @@ func EditChatName(chat structs.Chat) bool {
 	return true
 }
 
-func UpdateLastReadMessageId(message structs.Message, username string) bool {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) UpdateLastReadMessageId(message structs.Message, id string) bool {
+	database := db.client.Database("user")
 	userCollection := database.Collection("users")
-
-	filter := bson.D{{"username", username}}
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided user id: %v", err, id)
+		return false
+	}
+	filter := bson.D{{"_id", objectId}}
 	update := bson.D{{"$set", bson.D{{"chats.$[chat].last_read_message_id",  message.Id}}}}
 	arrayFilter := options.ArrayFilters{Filters: []interface{}{bson.M{"chat.chatid": message.ChatId}}}
 	opts := options.UpdateOptions{ArrayFilters: &arrayFilter}
@@ -333,12 +355,12 @@ func UpdateLastReadMessageId(message structs.Message, username string) bool {
 		log.Error("Error updating user chats: ", err)
 		return false
 	}
-	log.Infof("Pushed new chat for %v user: %v", result.ModifiedCount, username)
+	log.Infof("Pushed new chat for %v user: %v", result.ModifiedCount, id)
 	return true
 }
 
-func CloseConnection() {
-	if err := client.Disconnect(context.TODO()); err != nil {
+func (db *MongoMainDataStorage) CloseConnection() {
+	if err := db.client.Disconnect(context.TODO()); err != nil {
 		log.Error("Error disconnect mongo: ", err)
 	}
 }

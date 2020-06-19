@@ -1,8 +1,8 @@
 package main
 
 import (
-	"chat_backend/db/mongodb"
-	"chat_backend/db/postgres"
+	"chat_backend/db/mainDataStorage"
+	"chat_backend/db/userKeysData"
 	"chat_backend/server"
 	"os"
 )
@@ -10,16 +10,14 @@ import (
 func main() {
 
 	defer func() {
-		postgres.CloseConnection()
-		mongodb.CloseConnection()
+		userKeysData.Manager.CloseConnection()
+		mainDataStorage.Manager.CloseConnection()
 	}()
 
 	port := os.Getenv("BACKEND_PORT")
 
-	postgres.MakeConnection()
-	mongodb.MakeConnection()
-
-	postgres.InitTables()
+	userKeysData.Init()
+	mainDataStorage.Init()
 
 	server.StartServer(port)
 }

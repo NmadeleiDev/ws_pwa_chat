@@ -1,46 +1,52 @@
 package handlers
 
 import (
-	"chat_backend/db/mongodb"
-	"chat_backend/db/postgres"
+	"chat_backend/db/mainDataStorage"
+	"chat_backend/db/userKeysData"
 	"chat_backend/server/utils"
 	"chat_backend/structs"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 )
 
 func	GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
-
+	var id string
+	var ok bool
+	// это немного необычный запрос, он гет если от веба и пост, если от мобайла.
 	if r.Method == http.MethodGet {
-		sessionKey := utils.GetCookieValue(r, "session_id")
+		id, ok = utils.AuthWebRequest(r)
+	} else if r.Method == http.MethodPost {
+		id, ok = utils.AuthMobileToken(r)
+	}
+	if !ok {
+		utils.SendFailResponse(w, "Unauthorized request")
+		log.Infof("Unauthorized. Id: %v", id)
+		return
+	}
+	user := &structs.User{Id: id}
 
-		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
-		if err != nil {
-			log.Error("Error getting user data from postgres: ", err)
-			utils.SendFailResponse(w)
-			return
-		}
-		err = mongodb.FillUserData(&userData)
-		if err != nil {
-			log.Error("Error getting user data from mongo: ", err)
-			utils.SendFailResponse(w)
-			return
-		}
-		utils.SendDataResponse(w, userData)
+	if mainDataStorage.Manager.FillUserData(user) {
+		utils.SendDataResponse(w, *user)
+	} else {
+		utils.SendFailResponse(w, "error")
 	}
 }
 
 func	CreateChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
-		var chatData structs.Chat
+		var chatData struct{
+			Data	structs.Chat	`json:"data"`
+		}
 
-		if !utils.ValidateRequest(w, r) {
+		_, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
+
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
@@ -52,7 +58,7 @@ func	CreateChatHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		chat, err := mongodb.CreateChat(chatData)
+		chat, err := mainDataStorage.Manager.CreateChat(chatData.Data)
 		if err != nil {
 			log.Error("Error creating chat: ", err)
 			return
@@ -63,16 +69,33 @@ func	CreateChatHandler(w http.ResponseWriter, r *http.Request) {
 
 func	GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 
-	if r.Method == http.MethodGet {
-		if !utils.ValidateRequest(w, r) {
+	if r.Method == http.MethodPost {
+		var chatData struct{
+			Data	structs.Chat	`json:"data"`
+		}
+
+		_, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
-		chatId := mux.Vars(r)["chatId"]
 
-		messages, err := mongodb.GetMessagesFromPool(chatId)
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for login: ", err)
+			return
+		}
+
+		err = json.Unmarshal(requestData, &chatData)
+		if err != nil {
+			log.Error("Can't parse request body for login: ", err)
+			return
+		}
+
+		messages, err := mainDataStorage.Manager.GetMessagesFromPool(chatData.Data.ChatId)
 		if err != nil {
 			log.Error("Error getting messages: ", err)
-			utils.SendFailResponse(w)
+			utils.SendFailResponse(w, "error")
 		}
 		utils.SendDataResponse(w, messages)
 	}
@@ -80,19 +103,24 @@ func	GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 
 func	GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 
+	var id string
+	var ok bool
+	// это немного необычный запрос, он гет если от веба и пост, если от мобайла.
 	if r.Method == http.MethodGet {
-		sessionKey := utils.GetCookieValue(r, "session_id")
-		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
-		if err != nil {
-			log.Error("Error getting user data from postgres: ", err)
-			utils.SendFailResponse(w)
-			return
-		}
-		users, err := postgres.GetAllSamePoolUsers(userData.Pool)
-		if err != nil {
-			log.Error("Error getting messages: ", err)
-			utils.SendFailResponse(w)
-		}
+		id, ok = utils.AuthWebRequest(r)
+	} else if r.Method == http.MethodPost {
+		id, ok = utils.AuthMobileToken(r)
+	}
+	if !ok {
+		utils.SendFailResponse(w, "Unauthorized request")
+		return
+	}
+
+	users, err := userKeysData.Manager.GetAllSamePoolUsers(id)
+	if err != nil {
+		log.Error("Error getting users: ", err)
+		utils.SendFailResponse(w, "error")
+	} else {
 		utils.SendDataResponse(w, users)
 	}
 }
@@ -100,28 +128,36 @@ func	GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 func AddUserToChatHandler(w http.ResponseWriter, r *http.Request)  {
 	if r.Method == http.MethodPost {
 		var userToAddData struct {
-			User	structs.User	`json:"user"`
-			Chat	structs.Chat	`json:"chat"`
+			Data	struct{
+				User	structs.User	`json:"user"`
+				Chat	structs.Chat	`json:"chat"`
+			}		`json:"data"`
 		}
-		if !utils.ValidateRequest(w, r) {
+
+		id, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
+
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
 			return
 		}
+
 		err = json.Unmarshal(requestData, &userToAddData)
 		if err != nil {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		if !mongodb.AddUserToChatMembers(userToAddData.Chat.ChatId, userToAddData.User) {
-			utils.SendFailResponse(w)
+		userToAddData.Data.User.Id = id
+		if !mainDataStorage.Manager.AddUserToChatMembers(userToAddData.Data.Chat.ChatId, userToAddData.Data.User) {
+			utils.SendFailResponse(w, "error")
 			return
 		}
-		if !mongodb.AddChatToUserChats(userToAddData.Chat, userToAddData.User.Username) {
-			utils.SendFailResponse(w)
+		if !mainDataStorage.Manager.AddChatToUserChats(userToAddData.Data.Chat, userToAddData.Data.User.Username) {
+			utils.SendFailResponse(w, "error")
 			return
 		}
 		utils.SendSuccessResponse(w)
@@ -130,8 +166,12 @@ func AddUserToChatHandler(w http.ResponseWriter, r *http.Request)  {
 
 func SaveChatNameHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var newChatData structs.Chat
-		if !utils.ValidateRequest(w, r) {
+		var newChatData struct{
+			Data structs.Chat `json:"data"`
+		}
+		_, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
@@ -144,8 +184,8 @@ func SaveChatNameHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for chat name edit: ", err)
 			return
 		}
-		if !mongodb.EditChatName(newChatData) {
-			utils.SendFailResponse(w)
+		if !mainDataStorage.Manager.EditChatName(newChatData.Data) {
+			utils.SendFailResponse(w, "error")
 			return
 		}
 		utils.SendSuccessResponse(w)
@@ -154,12 +194,12 @@ func SaveChatNameHandler(w http.ResponseWriter, r *http.Request) {
 
 func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var message structs.Message
-		sessionKey := utils.GetCookieValue(r, "session_id")
-		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
-		if err != nil {
-			log.Error("Error getting user data from postgres: ", err)
-			utils.SendFailResponse(w)
+		var message struct{
+			Data structs.Message `json:"data"`
+		}
+		id, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
@@ -172,8 +212,8 @@ func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		if !mongodb.UpdateLastReadMessageId(message, userData.Username) {
-			utils.SendFailResponse(w)
+		if !mainDataStorage.Manager.UpdateLastReadMessageId(message.Data, id) {
+			utils.SendFailResponse(w, "error")
 			return
 		}
 		utils.SendSuccessResponse(w)
@@ -182,12 +222,12 @@ func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
 	if r.Method == http.MethodPost {
-		var chat structs.Chat
-		sessionKey := utils.GetCookieValue(r, "session_id")
-		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
-		if err != nil {
-			log.Error("Error getting user data from postgres: ", err)
-			utils.SendFailResponse(w)
+		var chat struct {
+			Data structs.Chat `json:"data"`
+		}
+		id, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
@@ -200,12 +240,12 @@ func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		if !mongodb.DeleteChatFromUserChats(chat, userData.Username) {
-			utils.SendFailResponse(w)
+		if !mainDataStorage.Manager.DeleteChatFromUserChats(chat.Data, id) {
+			utils.SendFailResponse(w, "error")
 			return
 		}
-		if !mongodb.DeleteUserFromChatMembers(chat.ChatId, userData.Username) {
-			utils.SendFailResponse(w)
+		if !mainDataStorage.Manager.DeleteUserFromChatMembers(chat.Data.ChatId, id) {
+			utils.SendFailResponse(w, "error")
 			return
 		}
 		utils.SendSuccessResponse(w)
@@ -214,12 +254,12 @@ func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
 
 func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var pool structs.Pool
-		sessionKey := utils.GetCookieValue(r, "session_id")
-		userData, err := postgres.GetUserNameIdAndPool(sessionKey)
-		if err != nil {
-			log.Error("Error getting user data from postgres: ", err)
-			utils.SendFailResponse(w)
+		var pool struct{
+			Data structs.Pool `json:"data"`
+		}
+		id, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
@@ -232,21 +272,28 @@ func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		if postgres.TryPoolSignIn(pool) {
-			if postgres.UpdateUserPoolId(userData, pool) {
+		if userKeysData.Manager.TryPoolSignIn(pool.Data) {
+			if userKeysData.Manager.UpdateUserPoolId(id, pool.Data) {
 				utils.SendSuccessResponse(w)
 			} else {
-				utils.SendFailResponse(w)
+				utils.SendFailResponse(w, "error")
 			}
 		} else {
-			utils.SendFailResponse(w)
+			utils.SendFailResponse(w, "error")
 		}
 	}
 }
 
 func CreatePoolHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var pool structs.Pool
+		var pool struct{
+			Data structs.Pool	`json:"data"`
+		}
+		_, ok := utils.IdentifyWebOrMobileRequest(r)
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
+			return
+		}
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
@@ -257,10 +304,10 @@ func CreatePoolHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		if postgres.CreatePool(pool) {
+		if userKeysData.Manager.CreatePool(pool.Data) {
 			utils.SendSuccessResponse(w)
 		} else {
-			utils.SendFailResponse(w)
+			utils.SendFailResponse(w, "error")
 		}
 	}
 }

@@ -75,7 +75,7 @@
         methods: {
             signIn() {
                 const that = this;
-                const success =api.post("signin", this.user);
+                const success = api.post("signin", this.user);
                 success.then(data => {
                     if (data.status === true) {
                         that.$router.push("/chat");
@@ -87,7 +87,7 @@
             },
             signUp() {
                 const that = this;
-                const success =api.post("signup", this.user);
+                const success = api.post("signup", this.user);
                 success.then(data => {
                     if (data.status === true) {
                         that.$router.push("/chat");

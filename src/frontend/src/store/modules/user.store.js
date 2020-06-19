@@ -76,27 +76,30 @@ const user = {
         }
     },
     actions: {
-        LOAD_USER_DATA: (context) => {
-            const response = api.get("user");
-            response.then(data => {
-                let user = data.data;
-                context.commit("SET_USER", user);
-                user.chats.forEach(item => {
-                    const response = api.get('messages/' + item.chat_id);
-                    response.then(data => {
-                        let messages = [];
-                        if (data === undefined || data === null || data.status === false) {
-                            console.log("Some error in load messages");
-                            return;
+        LOAD_USER_DATA: async (context) => {
+            const response = await api.get("user");
+            if (response.status !== true) {
+                console.log("Error loading user data.")
+                return
+            }
+            let user = response.data;
+            context.commit("SET_USER", user);
+            user.chats.forEach(item => {
+                const response = api.post('messages', {chat_id: item.chat_id});
+                response.then(data => {
+                    let messages = [];
+                    if (data === undefined || data === null || data.status === false) {
+                        console.log("Some error in load messages");
+                        return;
+                    }
+                    data.data.forEach(item => {
+                            messages.push(item)
                         }
-                        data.data.forEach(item => {
-                                messages.push(item)
-                            }
-                        );
-                        context.commit("SET_CHAT_MESSAGES", {chat_id: item.chat_id, messages: messages})
-                    });
-                })
+                    );
+                    context.commit("SET_CHAT_MESSAGES", {chat_id: item.chat_id, messages: messages})
+                });
             });
+            return true;
         },
         RECEIVE_MESSAGE: (context, socketMessage) => {
             let container;

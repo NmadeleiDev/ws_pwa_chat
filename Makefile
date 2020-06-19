@@ -31,6 +31,9 @@ front-dep:
 front-dev:
 	cd ./src/frontend && npm run serve
 
+back-fmt:
+	cd ./src/backend && gofmt -w -s .
+
 pause:
 	docker-compose pause
 

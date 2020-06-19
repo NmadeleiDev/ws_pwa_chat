@@ -1,7 +1,7 @@
 package client
 
 import (
-	"chat_backend/db/mongodb"
+	"chat_backend/db/mainDataStorage"
 	"chat_backend/structs"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -42,10 +42,10 @@ func	CreateNewClient(connection *websocket.Conn, user *structs.User) (client *Cl
 
 func	(client *Client) SubscribeToDBEvents() {
 
-	// TODO зачем я подписываюсь на каждую колекцию отдельно, занимая память горутинами, если можно подписаться на базу?
+	// TODO зачем я подписываюсь на каждую коллекцию отдельно, занимая память горутинами, если можно подписаться на базу?
 	for _, chat := range client.User.Chats {
-		go mongodb.ListenChatMessagesStream(chat.MessagePoolId, chat.ChatId, client.ClientExitChan, client.ReadMessageChan)
+		go mainDataStorage.Manager.ListenChatMessagesStream(chat.MessagePoolId, chat.ChatId, client.ClientExitChan, client.ReadMessageChan)
 		log.Printf("Subscribed %v to %v chat", client.User.Username, chat.Name)
 	}
-	go mongodb.ListenUserChatsStream(client.User, client.ClientExitChan, client.ReadMessageChan)
+	go mainDataStorage.Manager.ListenUserChatsStream(client.User, client.ClientExitChan, client.ReadMessageChan)
 }

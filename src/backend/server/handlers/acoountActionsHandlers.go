@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"chat_backend/db/mongodb"
-	"chat_backend/db/postgres"
+	"chat_backend/db/mainDataStorage"
+	"chat_backend/db/userKeysData"
 	"chat_backend/server/utils"
 	"chat_backend/structs"
 	"encoding/json"
@@ -15,6 +15,7 @@ func	SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		requestData, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
 		if err != nil {
 			log.Error("Can't read request body for signup: ", err)
 			return
@@ -26,19 +27,20 @@ func	SignUpHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for signup: ", err)
 			return
 		}
-
-		if !postgres.CreateUser(*userData) {
-			utils.SendFailResponse(w)
-			return
-		}
-
-		if !mongodb.CreateUser(*userData) {
-			utils.SendFailResponse(w)
-			return
-		}
-
-		if utils.RefreshRequestSessionKeyCookie(w, *userData) {
+		id, ok := mainDataStorage.Manager.CreateUser(*userData)
+		if ok {
+			userData.Id = id
+			cookie, token, success := userKeysData.Manager.CreateUserAndGenerateKeys(*userData)
+			if !success {
+				utils.SendFailResponse(w, "Unauthorized request")
+				return
+			}
+			userData.Token = token
+			utils.SetCookie(&w, "session_id", cookie)
+			//utils.SendDataResponse(w, userData)
 			utils.SendSuccessResponse(w)
+		} else {
+			utils.SendFailResponse(w, "error")
 		}
 	}
 }
@@ -47,21 +49,35 @@ func	SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		requestData, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
+			utils.SendFailResponse(w, "get body error")
 			return
 		}
 
-		userData := &structs.User{}
-		err = json.Unmarshal(requestData, userData)
+		dataCont := struct {
+			Data structs.User `json:"data"`
+		}{}
+
+		err = json.Unmarshal(requestData, &dataCont)
 		if err != nil {
 			log.Error("Can't parse request body for login: ", err)
+			utils.SendFailResponse(w, "body read error")
 			return
 		}
+		userData := &dataCont.Data
 
-		if utils.RefreshRequestSessionKeyCookie(w, *userData) {
-			utils.SendSuccessResponse(w)
+		cookie, token, success := userKeysData.Manager.SignInAndRefreshMobileAndWebKeys(*userData)
+		if !success {
+			utils.SendFailResponse(w, "Wrong password")
+			return
 		}
+		userData.Token = token
+		utils.SetCookie(&w, "session_id", cookie)
+		log.Infof("Set user cookie: %v; id: %v", cookie, userData.Id)
+		utils.SendDataResponse(w, userData)
 	}
 }
 
@@ -70,7 +86,7 @@ func	SignOutHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		sessionKey := utils.GetCookieValue(r, "session_id")
 
-		postgres.DeleteSessionKey(sessionKey)
+		userKeysData.Manager.DeleteCookieKey(sessionKey)
 
 		utils.SendSuccessResponse(w)
 	}
@@ -80,6 +96,8 @@ func	UnregisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		requestData, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
 			return
@@ -92,12 +110,12 @@ func	UnregisterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if utils.RefreshRequestSessionKeyCookie(w, *userData) {
-			postgres.DeleteUser(*userData)
-			utils.SendSuccessResponse(w)
-			// TODO mongo.DeleteUser
-		} else {
-			log.Error("Looks like unverified attempt to delete account... User: ", userData)
-		}
+		//if utils.RefreshRequestSessionKeyCookie(w, *userData) {
+		//	userKeysData.Manager.DeleteUser(*userData)
+		//	utils.SendSuccessResponse(w)
+		//	// TODO mongo.DeleteUser
+		//} else {
+		//	log.Error("Looks like unverified attempt to delete account... User: ", userData)
+		//}
 	}
 }

@@ -1,13 +1,13 @@
 package structs
 
 type User struct {
-	Id					int			`json:"-" bson:"-"`
-	Username			string		`json:"username"`
-	Email				string		`json:"email"`
-	Password			string		`json:"password,omitempty"`
-	Chats				[]Chat		`json:"chats"`
-	Pool				string		`json:"poolId" bson:"-"`
-	SecretHash			string		`json:"secret_hash" bson:"-"`
+	Id       string `json:"-" bson:"-"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password,omitempty"`
+	Chats    []Chat `json:"chats"`
+	Pool     string `json:"poolId" bson:"pool_id"`
+	Token    string `json:"token,omitempty" bson:"-"`
 }
 
 type Chat struct {

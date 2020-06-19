@@ -10,9 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ListenChatMessagesStream(messagePoolId string, chatId string, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage) {
+func (db *MongoMainDataStorage) ListenChatMessagesStream(messagePoolId string, chatId string, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage) {
 
-	database := client.Database("chat")
+	database := db.client.Database("chat")
 	collection := database.Collection(messagePoolId)
 	collectionUpdateChan := make(chan structs.Message)
 
@@ -70,8 +70,8 @@ func ListenChatMessagesStream(messagePoolId string, chatId string, clientExitCha
 	}
 }
 
-func ListenUserChatsStream(user *structs.User, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage) {
-	database := client.Database("user")
+func (db *MongoMainDataStorage) ListenUserChatsStream(user *structs.User, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage) {
+	database := db.client.Database("user")
 	collection := database.Collection("users")
 	collectionUpdateChan := make(chan structs.Chat)
 
@@ -139,13 +139,13 @@ func ListenUserChatsStream(user *structs.User, clientExitChan chan byte, writeUp
 	for {
 		select {
 		case chat := <- collectionUpdateChan:
-			chat, err = GetChatDataById(chat.ChatId)
+			chat, err = db.GetChatDataById(chat.ChatId)
 			if err != nil {
 				log.Error("Error getting chat data by id: ", err)
 			}
 			user.Chats = append(user.Chats, chat)
 			// сразу подписываю юзера на новый чат
-			go ListenChatMessagesStream(chat.MessagePoolId, chat.ChatId, clientExitChan, writeUpdatesChan)
+			go db.ListenChatMessagesStream(chat.MessagePoolId, chat.ChatId, clientExitChan, writeUpdatesChan)
 			update := structs.SocketMessage{Type: constants.ChatType, Data: chat, Error: err}
 			writeUpdatesChan <- update
 		case <- clientExitChan:
