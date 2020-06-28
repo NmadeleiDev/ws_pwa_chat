@@ -66,8 +66,9 @@ const sqliteDB = {
         },
         async LOAD_ACTIVE_USER_SECRET_KEYS(context) {
             let user;
+            let data;
             try {
-                let data = await context.state.conn.get("SELECT username, session_key, user_secret FROM user_data WHERE active=1");
+                data = await context.state.conn.get("SELECT username, session_key, user_secret FROM user_data WHERE active=1");
                 if (data.length < 3 || data.find(item => item.length === 0) !== undefined) {
                     console.log("Failed to load user db secrets. Data: ", data);
                     return false
@@ -79,7 +80,7 @@ const sqliteDB = {
                 }
                 console.log("Loaded secrets successfully: ", user);
             } catch (e) {
-                console.log("Error getting users secrets from db: ", e);
+                console.log("Error getting users secrets from db: ", e, data);
                 return false
             }
             context.commit("SET_USERNAME", user.username, {root: true})

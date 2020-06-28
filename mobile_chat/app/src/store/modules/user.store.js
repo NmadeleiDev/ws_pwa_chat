@@ -43,6 +43,10 @@ const user = {
     }),
     mutations: {
         SET_USER: (state, payload) => {
+            if (!payload) {
+                console.log("Payload for SET USER is null");
+                return;
+            }
             state.username = payload.username;
             state.email = payload.email;
             state.contacts = payload.contacts;
@@ -209,11 +213,11 @@ const user = {
                         return false;
                     }
                     context.commit("SET_USER_SECRET", payload.userSecret)
-                    if (await context.dispatch("SAVE_KEY_TO_DB", {key: context.getters.GET_USER_SECRET_KEY, username: context.getters.GET_USER.username}) === true) {
-                        return true;
-                    } else {
-                        return false;
-                    }
+
+                    return await context.dispatch("SAVE_KEY_TO_DB", {
+                        key: context.getters.GET_USER_SECRET_KEY,
+                        username: context.getters.GET_USER.username
+                    }) === true;
                 } catch (e) {
                     console.log(e)
                     return false;

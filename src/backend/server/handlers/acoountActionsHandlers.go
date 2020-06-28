@@ -37,8 +37,8 @@ func	SignUpHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			userData.Token = token
 			utils.SetCookie(&w, "session_id", cookie)
-			//utils.SendDataResponse(w, userData)
-			utils.SendSuccessResponse(w)
+			utils.SendDataResponse(w, userData)
+			//utils.SendSuccessResponse(w)
 		} else {
 			utils.SendFailResponse(w, "error")
 		}

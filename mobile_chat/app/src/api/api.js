@@ -77,7 +77,7 @@ const post = async function (path, data = null, eventDate = null) {
 };
 
 function buildRequestUri(path) {
-    return 'http://192.168.1.83:8080/api/v1/' + path;
+    return 'http://ec2-18-219-47-231.us-east-2.compute.amazonaws.com:8080/api/v1/' + path;
 }
 
 export default {

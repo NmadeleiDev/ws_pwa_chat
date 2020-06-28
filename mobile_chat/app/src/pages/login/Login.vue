@@ -67,27 +67,30 @@
         created() {
             this.$navigateTo(Menu, { clearHistory: true });
         },
+        mounted() {
+            this.$store.dispatch("INIT_SQLITE_CONN").then(res => {
+                if (res === false) {
+                    this.alert("Failed to connect to local memory storage");
+                } else {
+                    console.log("Db init success");
+                }
+            });
+        },
         methods: {
             passLogin() {
                 // this.$navigateTo(Menu, { clearHistory: true });
-                this.$store.dispatch("INIT_SQLITE_CONN").then(res => {
-                    if (res === false) {
-                        this.alert("Failed to connect to local memory storage");
+                this.$store.dispatch("LOAD_ACTIVE_USER_SECRET_KEYS").then(ok => {
+                    if (ok === false) {
+                        console.log("No secret keys found");
                         return;
                     }
-                    this.$store.dispatch("LOAD_ACTIVE_USER_SECRET_KEYS").then(ok => {
-                        if (ok === false) {
-                            console.log("No secret keys found");
-                            return;
+                    this.$store.dispatch("LOAD_USER_DATA").then(result => {
+                        if (result === false) {
+                            console.log("Failed to load user data")
+                            return
                         }
-                        this.$store.dispatch("LOAD_USER_DATA").then(result => {
-                            if (result === false) {
-                                console.log("Failed to load user data")
-                                return
-                            }
-                            console.log("Navigating to chat!")
-                            this.$navigateTo(Menu, { clearHistory: true });
-                        }).catch(e => console.log("ERROR: ", e));
+                        console.log("Navigating to menu!")
+                        this.$navigateTo(Menu, { clearHistory: true });
                     }).catch(e => console.log("ERROR: ", e));
                 }).catch(e => console.log("ERROR: ", e));
             },
@@ -134,8 +137,11 @@
                     this.processing = false;
                     return;
                 }
-                // здесь обращение в store для регистрации
-                this.$store.dispatch("SIGN_UP", {username: this.user.username, password: this.user.password}).then(res => {
+
+                this.$store.dispatch("SIGN_UP", {
+                    username: this.user.username,
+                    password: this.user.password
+                }).then(res => {
                     if (res === true) {
                         console.log("Signup successed, moving to chat.");
                         this.$navigateTo(Menu, { clearHistory: true });
@@ -147,7 +153,7 @@
             },
 
             forgotPassword() {
-                // возмонжо сделаю обработку восстановления
+                // возможно сделаю обработку восстановления
             },
 
             focusPassword() {

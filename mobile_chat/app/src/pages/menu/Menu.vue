@@ -58,9 +58,9 @@
 
             <AbsoluteLayout ref="fabItemPosition" marginTop="87%" marginLeft="80%">
                 <GridLayout ref="fabItemContainer" left="8" top="8">
-                    <FloatButtonItem row="1" :class="classItem1" color="#E94E77" title="E"/>
-                    <FloatButtonItem row="1" :class="classItem2" color="#3FB8AF" title="U"/>
-                    <FloatButtonItem row="1" :class="classItem3" color="#FCB653" title="V"/>
+                    <FloatButtonItem row="1" :class="classItem1" color="#E94E77" title="Новый чат"/>
+                    <FloatButtonItem row="1" :class="classItem2" color="#3FB8AF" title="Еще что то"/>
+                    <FloatButtonItem row="1" :class="classItem3" color="#FCB653" title="И еще"/>
                 </GridLayout>
                 <FloatButton @onButtonTap="onButtonTap" :isActive="isActive"/>
             </AbsoluteLayout>
@@ -77,29 +77,29 @@
 
     export default {
         mounted() {
-            // let maxl = this.fish.length - 1;
-            // let words = this.fish.split(" ");
-            // let maxc = words.length - 1;
-            //
-            // for (let i = 1; i < 21; i++) {
-            //     let date = new Date(Math.floor(Math.random() * Math.floor(20)) + 2000, Math.floor(Math.random() * Math.floor(12)), Math.floor(Math.random() * Math.floor(28)), Math.floor(Math.random() * Math.floor(59)), Math.floor(Math.random() * Math.floor(59)), Math.floor(Math.random() * Math.floor(59)), 0);
-            //     let chat = {
-            //         id: Math.floor(Math.random() * Math.floor(10000)) + i,
-            //         name: words[Math.floor(Math.random() * Math.floor(maxc))],
-            //         messages: [{
-            //             sender: words[Math.floor(Math.random() * Math.floor(maxc))],
-            //             isNew: Math.floor(Math.random() * Math.floor(10)) >= 5,
-            //             text: this.fish.substring(Math.random() * Math.floor(maxl / 2), Math.random() * Math.floor(maxl / 2) + maxl / 2),
-            //             time: date
-            //         }, {
-            //             isNew: Math.floor(Math.random() * Math.floor(10)) >= 5,
-            //             sender: words[Math.floor(Math.random() * Math.floor(maxc))],
-            //             text: this.fish.substring(Math.random() * Math.floor(maxl / 2), Math.random() * Math.floor(maxl / 2) + maxl / 2),
-            //             time: date
-            //         }]
-            //     }
-            //     this.chats.push(chat);
-            // }
+            let maxl = this.fish.length - 1;
+            let words = this.fish.split(" ");
+            let maxc = words.length - 1;
+
+            for (let i = 1; i < 21; i++) {
+                let date = new Date(Math.floor(Math.random() * Math.floor(20)) + 2000, Math.floor(Math.random() * Math.floor(12)), Math.floor(Math.random() * Math.floor(28)), Math.floor(Math.random() * Math.floor(59)), Math.floor(Math.random() * Math.floor(59)), Math.floor(Math.random() * Math.floor(59)), 0);
+                let chat = {
+                    id: Math.floor(Math.random() * Math.floor(10000)) + i,
+                    name: words[Math.floor(Math.random() * Math.floor(maxc))],
+                    messages: [{
+                        sender: words[Math.floor(Math.random() * Math.floor(maxc))],
+                        isNew: Math.floor(Math.random() * Math.floor(10)) >= 5,
+                        text: this.fish.substring(Math.random() * Math.floor(maxl / 2), Math.random() * Math.floor(maxl / 2) + maxl / 2),
+                        time: date
+                    }, {
+                        isNew: Math.floor(Math.random() * Math.floor(10)) >= 5,
+                        sender: words[Math.floor(Math.random() * Math.floor(maxc))],
+                        text: this.fish.substring(Math.random() * Math.floor(maxl / 2), Math.random() * Math.floor(maxl / 2) + maxl / 2),
+                        time: date
+                    }]
+                }
+                this.chats.push(chat);
+            }
             console.log("Len 1 = ", this.chats.length);
         },
         data() {
@@ -107,15 +107,15 @@
                 textFieldValue: "",
                 filter: '',
                 isActive: false,
-                // chats: [],
+                chats: [],
 
                 fish: 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.'
             };
         },
         computed: {
-            chats() {
-                return this.$store.getters.GET_USER.chats;
-            },
+            // chats() {
+            //     return this.$store.getters.GET_USER.chats;
+            // },
             account() {
                 return 'Greg';
             },
