@@ -33,6 +33,9 @@ backend-fmt:
 backend-vendor:
 	cd ./src/backend && go mod vendor
 
+git-minor:
+	git add * ; git commit -m "minor" ; git push
+
 
 front-build:
 	cd ./src/pwa-frontend && npm run build
