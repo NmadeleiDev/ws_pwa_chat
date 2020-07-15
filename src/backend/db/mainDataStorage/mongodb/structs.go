@@ -5,11 +5,11 @@ import (
 )
 
 type UpdatedMessageData struct {
-	OperationType			string		`bson:"operationType"`
-	Message					structs.Message	`bson:"fullDocument"`
+	OperationType string          `bson:"operationType"`
+	Message       structs.Message `bson:"fullDocument"`
 }
 
 type UpdatedChatsData struct {
-	OperationType			string		`bson:"-"`
-	Chats					[]structs.Chat	`bson:"updateDescription.updatedFields.chats"`
+	OperationType string         `bson:"-"`
+	Chats         []structs.Chat `bson:"updateDescription.updatedFields.chats"`
 }

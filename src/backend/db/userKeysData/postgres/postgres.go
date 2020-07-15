@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	userDataTable = "ws_chat.users"
+	userDataTable  = "ws_chat.users"
 	poolsDataTable = "ws_chat.pools"
-	hashCost = 14
+	hashCost       = 14
 )
 
 type PgSqlUserKeysManager struct {
@@ -127,7 +127,9 @@ func (db *PgSqlUserKeysManager) CreateUserAndGenerateKeys(user structs.User) (we
 	tokenSecret := hashes.CalculateSha1(user.Username + "_hey_" + time.Now().String() + string(rand.Int63()))
 	userSecret := hashes.CalculateSha256(strings.Join([]string{user.Username, user.Password, user.Username}, "&-"))
 
-	query := `INSERT INTO ` + userDataTable + ` (id, username, password, email_address, m_token_secret, w_session_key, user_secret) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	query := `INSERT INTO ` + userDataTable + ` 
+(id, username, password, email_address, m_token_secret, w_session_key, user_secret) 
+VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err = db.connection.Exec(query, user.Id, user.Username, passwordHash, user.Email, tokenSecret, cookieKey, userSecret)
 
 	if err != nil {
@@ -144,7 +146,7 @@ func (db *PgSqlUserKeysManager) DeleteCookieKey(sessionKey string) {
 	}
 }
 
-func (db *PgSqlUserKeysManager) DeleteUser(user structs.User)  {
+func (db *PgSqlUserKeysManager) DeleteUser(user structs.User) {
 	query := `
 DELETE FROM ` + userDataTable + ` 
 WHERE username=$1`
@@ -172,9 +174,9 @@ func (db *PgSqlUserKeysManager) GetAllSamePoolUsers(id string) ([]structs.User, 
 
 	var result []structs.User
 
-	query := `SELECT username FROM ` + userDataTable + ` 
+	query := `SELECT username, online FROM ` + userDataTable + ` 
 WHERE pool_id LIKE (
-	SELECT pool_id FROM ` + userDataTable +  `
+	SELECT pool_id FROM ` + userDataTable + `
 	WHERE id=$1
 )`
 	rows, err := db.connection.Query(query, id)
@@ -184,7 +186,7 @@ WHERE pool_id LIKE (
 	}
 	for rows.Next() {
 		userItem := &structs.User{}
-		if err = rows.Scan(&userItem.Username); err != nil {
+		if err = rows.Scan(&userItem.Username, &userItem.IsOnline); err != nil {
 			log.Error("Error scanning all users rows: ", err)
 		} else {
 			result = append(result, *userItem)
@@ -227,7 +229,7 @@ SET session_key=$1
 WHERE session_key=$2`
 
 	if _, err := db.connection.Exec(query, new, old); err != nil {
-		log.Error("Error updating session key: ",err)
+		log.Error("Error updating session key: ", err)
 		return false
 	}
 	return true
@@ -246,7 +248,7 @@ INSERT INTO ` + poolsDataTable + `(pool_id, password)
 VALUES ($1, $2)`
 
 	if _, err := db.connection.Exec(query, pool.PoolId, passwordHash); err != nil {
-		log.Error("Error inserting pool: ",err)
+		log.Error("Error inserting pool: ", err)
 		return false
 	}
 	return true

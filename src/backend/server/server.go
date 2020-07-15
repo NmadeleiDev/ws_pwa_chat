@@ -30,12 +30,11 @@ func StartServer(port string) {
 	router.HandleFunc("/pool_join", handlers.JoinUserToPool)
 	router.HandleFunc("/pool", handlers.CreatePoolHandler)
 
-
 	// ws handlers
 	router.HandleFunc("/connect", handlers.ChatSocketHandler)
 
 	log.Info("Listening ", port)
-	if err := http.ListenAndServe(":" + port, router); err != nil {
+	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatal("Server error: ", err)
 	}
 }

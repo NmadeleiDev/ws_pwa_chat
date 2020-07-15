@@ -40,5 +40,3 @@ func Init() {
 	Manager.MakeConnection()
 	Manager.InitTables()
 }
-
-

@@ -16,7 +16,7 @@ var upgrader = websocket.Upgrader{
 	//ReadBufferSize:    1024,
 	//WriteBufferSize:   1024,
 	//WriteBufferPool:   nil,
-	Subprotocols:      []string{"chat"},
+	Subprotocols: []string{"chat"},
 	//Error:             nil,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
@@ -24,17 +24,19 @@ var upgrader = websocket.Upgrader{
 	//EnableCompression: false,
 }
 
-func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
+func ChatSocketHandler(w http.ResponseWriter, r *http.Request) {
+	id, ok := utils.IdentifyWebSocketRequest(r)
+	if !ok {
+		utils.SendFailResponse(w, "Unauthorized request")
+		return
+	}
+
 	connection, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("Error establishing ws connection: ", err)
 		return
 	}
-	id, ok := utils.IdentifyWebOrMobileRequest(r)
-	if !ok {
-		utils.SendFailResponse(w, "Unauthorized request")
-		return
-	}
+
 	user := &structs.User{Id: id}
 	if !mainDataStorage.Manager.FillUserData(user) {
 		log.Error("Failed to get user data from mongo.")
@@ -47,6 +49,3 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request)  {
 	go clientStruct.ReadHub()
 	go clientStruct.WriteHub()
 }
-
-
-

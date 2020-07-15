@@ -10,17 +10,17 @@ import (
 )
 
 const (
-	NewChatMeta = 1
+	NewChatMeta   = 1
 	InsertMessage = 1
 	UpdateMessage = 2
 	DeleteMessage = 3
 
-	MessageSent = 1
+	MessageSent      = 1
 	MessageDelivered = 2
-	MessageRead = 3
+	MessageRead      = 3
 )
 
-func	(client *Client) ReadHub() {
+func (client *Client) ReadHub() {
 	defer func() {
 		if err := client.Connection.Close(); err != nil {
 			log.Error("Error closing connection in read: ", err)

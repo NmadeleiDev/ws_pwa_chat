@@ -20,7 +20,7 @@ type MainDataManager interface {
 	CreateChat(newChat structs.Chat) (structs.Chat, error)
 	AddUserToChatMembers(chatId string, user structs.User) bool
 	DeleteUserFromChatMembers(chatId string, username string) bool
-	AddChatToUserChats(chat structs.Chat, username string) bool
+	AddChatToUserChats(chat structs.Chat, usernames []string) bool
 	DeleteChatFromUserChats(chat structs.Chat, username string) bool
 	EditChatName(chat structs.Chat) bool
 	UpdateLastReadMessageId(message structs.Message, username string) bool

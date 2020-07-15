@@ -54,20 +54,20 @@ services:
       - postgres_net
     restart: on-failure
 
-  server:
-    build:
-      context: ./src/nginx
-      dockerfile: Dockerfile
-    volumes:
-      - /etc/localtime:/etc/localtime/:ro
-      - /home/gregory/ssl_nginx/certs:/etc/nginx/certs
-    ports:
-    - ${FRONT_PORT}:80
-    networks:
-      - docker_net
-    links:
-      - backend
-    restart: always
+#  server:
+#    build:
+#      context: ./src/nginx
+#      dockerfile: Dockerfile
+#    volumes:
+#      - /etc/localtime:/etc/localtime/:ro
+#      - /home/gregory/ssl_nginx/certs:/etc/nginx/certs
+#    ports:
+#    - ${FRONT_PORT}:80
+#    networks:
+#      - docker_net
+#    links:
+#      - backend
+#    restart: always
 
 networks:
   postgres_net:

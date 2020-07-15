@@ -22,14 +22,26 @@ up: ## build & start the project (docker-compose)
 dev:
 	cd ./src/frontend && npm run serve
 
+up-dev: up front-dev
+
+git-prep: backend-fmt backend-vendor
+	git add * .env.example .env.release
+
+backend-fmt:
+	cd ./src/backend && gofmt -w -s .
+
+backend-vendor:
+	cd ./src/backend && go mod vendor
+
+
 front-build:
-	cd ./src/frontend && npm run build
+	cd ./src/pwa-frontend && npm run build
 
 front-dep:
-	cd ./src/frontend && npm install
+	cd ./src/pwa-frontend && npm install
 
 front-dev:
-	cd ./src/frontend && npm run serve
+	cd ./src/pwa-frontend && npm run serve
 
 back-fmt:
 	cd ./src/backend && gofmt -w -s .

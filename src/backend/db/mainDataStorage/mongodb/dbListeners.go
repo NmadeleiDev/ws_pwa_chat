@@ -20,7 +20,7 @@ func (db *MongoMainDataStorage) ListenChatMessagesStream(messagePoolId string, c
 	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
 	changeStream, err := collection.Watch(context.TODO(), mongo.Pipeline{matchStage}, opts)
 	if err != nil {
-		log.Error("Error watching message pool: ", err,  " poolID: ", messagePoolId)
+		log.Error("Error watching message pool: ", err, " poolID: ", messagePoolId)
 		return
 	}
 
@@ -60,11 +60,11 @@ func (db *MongoMainDataStorage) ListenChatMessagesStream(messagePoolId string, c
 
 	for {
 		select {
-		case message := <- collectionUpdateChan:
+		case message := <-collectionUpdateChan:
 			message.ChatId = chatId
 			update := structs.SocketMessage{Type: constants.MessageType, Data: message, Error: nil}
 			writeUpdatesChan <- update
-		case <- clientExitChan:
+		case <-clientExitChan:
 			return
 		}
 	}
@@ -138,7 +138,7 @@ func (db *MongoMainDataStorage) ListenUserChatsStream(user *structs.User, client
 
 	for {
 		select {
-		case chat := <- collectionUpdateChan:
+		case chat := <-collectionUpdateChan:
 			chat, err = db.GetChatDataById(chat.ChatId)
 			if err != nil {
 				log.Error("Error getting chat data by id: ", err)
@@ -148,7 +148,7 @@ func (db *MongoMainDataStorage) ListenUserChatsStream(user *structs.User, client
 			go db.ListenChatMessagesStream(chat.MessagePoolId, chat.ChatId, clientExitChan, writeUpdatesChan)
 			update := structs.SocketMessage{Type: constants.ChatType, Data: chat, Error: err}
 			writeUpdatesChan <- update
-		case <- clientExitChan:
+		case <-clientExitChan:
 			log.Infof("Exiting from %v chats stream", user.Username)
 			return
 		}

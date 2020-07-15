@@ -11,33 +11,36 @@ import (
 	"net/http"
 )
 
-func	SignUpHandler(w http.ResponseWriter, r *http.Request) {
+func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
-	if r.Method == "POST" {
+	if r.Method == http.MethodPost {
 		requestData, err := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
 		if err != nil {
 			log.Error("Can't read request body for signup: ", err)
 			return
 		}
+		defer r.Body.Close()
 
-		userData := &structs.User{}
-		err = json.Unmarshal(requestData, userData)
+		dataCont := struct {
+			Data structs.User `json:"data"`
+		}{}
+		err = json.Unmarshal(requestData, &dataCont)
 		if err != nil {
 			log.Error("Can't parse request body for signup: ", err)
 			return
 		}
-		id, ok := mainDataStorage.Manager.CreateUser(*userData)
+		id, ok := mainDataStorage.Manager.CreateUser(dataCont.Data)
 		if ok {
-			userData.Id = id
-			cookie, token, success := userKeysData.Manager.CreateUserAndGenerateKeys(*userData)
+			dataCont.Data.Id = id
+			cookie, token, success := userKeysData.Manager.CreateUserAndGenerateKeys(dataCont.Data)
 			if !success {
 				utils.SendFailResponse(w, "Unauthorized request")
 				return
 			}
-			userData.Token = token
+			dataCont.Data.Token = token
+			dataCont.Data.Password = ""
 			utils.SetCookie(&w, "session_id", cookie)
-			utils.SendDataResponse(w, userData)
+			utils.SendDataResponse(w, dataCont.Data)
 			//utils.SendSuccessResponse(w)
 		} else {
 			utils.SendFailResponse(w, "error")
@@ -45,7 +48,7 @@ func	SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func	SignInHandler(w http.ResponseWriter, r *http.Request) {
+func SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		requestData, err := ioutil.ReadAll(r.Body)
@@ -75,13 +78,14 @@ func	SignInHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		userData.Token = token
+		userData.Password = ""
 		utils.SetCookie(&w, "session_id", cookie)
 		log.Infof("Set user cookie: %v; id: %v", cookie, userData.Id)
 		utils.SendDataResponse(w, userData)
 	}
 }
 
-func	SignOutHandler(w http.ResponseWriter, r *http.Request) {
+func SignOutHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		sessionKey := utils.GetCookieValue(r, "session_id")
@@ -92,7 +96,7 @@ func	SignOutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func	UnregisterHandler(w http.ResponseWriter, r *http.Request) {
+func UnregisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		requestData, err := ioutil.ReadAll(r.Body)

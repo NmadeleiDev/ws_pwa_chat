@@ -11,15 +11,16 @@ import (
 	"net/http"
 )
 
-func	GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
+func GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
 	var id string
 	var ok bool
-	// это немного необычный запрос, он гет если от веба и пост, если от мобайла.
-	if r.Method == http.MethodGet {
-		id, ok = utils.AuthWebRequest(r)
-	} else if r.Method == http.MethodPost {
-		id, ok = utils.AuthMobileToken(r)
+	requestData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Error("Can't read request body for create chat: ", err)
+		utils.SendFailResponse(w, "read error")
+		return
 	}
+	id, ok = utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
 	if !ok {
 		utils.SendFailResponse(w, "Unauthorized request")
 		log.Infof("Unauthorized. Id: %v", id)
@@ -34,28 +35,28 @@ func	GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func	CreateChatHandler(w http.ResponseWriter, r *http.Request) {
+func CreateChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
-		var chatData struct{
-			Data	structs.Chat	`json:"data"`
+		var chatData struct {
+			Data structs.Chat `json:"data"`
 		}
-
-		_, ok := utils.IdentifyWebOrMobileRequest(r)
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for create chat: ", err)
+			utils.SendFailResponse(w, "read error")
+			return
+		}
+		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
 		if !ok {
 			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 
-		requestData, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Error("Can't read request body for login: ", err)
-			return
-		}
-
 		err = json.Unmarshal(requestData, &chatData)
 		if err != nil {
-			log.Error("Can't parse request body for login: ", err)
+			log.Error("Can't parse request body for create chat: ", err)
+			utils.SendFailResponse(w, "parse error")
 			return
 		}
 		chat, err := mainDataStorage.Manager.CreateChat(chatData.Data)
@@ -67,22 +68,21 @@ func	CreateChatHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func	GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
+func GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
-		var chatData struct{
-			Data	structs.Chat	`json:"data"`
+		var chatData struct {
+			Data structs.Chat `json:"data"`
 		}
-
-		_, ok := utils.IdentifyWebOrMobileRequest(r)
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
-		}
-
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
+			return
+		}
+
+		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 
@@ -101,15 +101,20 @@ func	GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func	GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	var id string
 	var ok bool
 	// это немного необычный запрос, он гет если от веба и пост, если от мобайла.
 	if r.Method == http.MethodGet {
-		id, ok = utils.AuthWebRequest(r)
+		id, ok = utils.AuthWebRequest(utils.GetCookieValue(r, "session_id"))
 	} else if r.Method == http.MethodPost {
-		id, ok = utils.AuthMobileToken(r)
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		id, ok = utils.AuthMobileToken(requestData, r.Header.Get("Event-date"))
 	}
 	if !ok {
 		utils.SendFailResponse(w, "Unauthorized request")
@@ -125,24 +130,23 @@ func	GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddUserToChatHandler(w http.ResponseWriter, r *http.Request)  {
+func AddUserToChatHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var userToAddData struct {
-			Data	struct{
-				User	structs.User	`json:"user"`
-				Chat	structs.Chat	`json:"chat"`
-			}		`json:"data"`
+			Data struct {
+				User structs.User `json:"user"`
+				Chat structs.Chat `json:"chat"`
+			} `json:"data"`
 		}
-
-		id, ok := utils.IdentifyWebOrMobileRequest(r)
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
-		}
-
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
+			return
+		}
+
+		id, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 
@@ -156,7 +160,7 @@ func AddUserToChatHandler(w http.ResponseWriter, r *http.Request)  {
 			utils.SendFailResponse(w, "error")
 			return
 		}
-		if !mainDataStorage.Manager.AddChatToUserChats(userToAddData.Data.Chat, userToAddData.Data.User.Username) {
+		if !mainDataStorage.Manager.AddChatToUserChats(userToAddData.Data.Chat, []string{userToAddData.Data.User.Username}) {
 			utils.SendFailResponse(w, "error")
 			return
 		}
@@ -166,17 +170,18 @@ func AddUserToChatHandler(w http.ResponseWriter, r *http.Request)  {
 
 func SaveChatNameHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var newChatData struct{
+		var newChatData struct {
 			Data structs.Chat `json:"data"`
 		}
-		_, ok := utils.IdentifyWebOrMobileRequest(r)
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
-		}
+
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for chat name edit: ", err)
+			return
+		}
+		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		err = json.Unmarshal(requestData, &newChatData)
@@ -194,17 +199,17 @@ func SaveChatNameHandler(w http.ResponseWriter, r *http.Request) {
 
 func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var message struct{
+		var message struct {
 			Data structs.Message `json:"data"`
-		}
-		id, ok := utils.IdentifyWebOrMobileRequest(r)
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		id, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		err = json.Unmarshal(requestData, &message)
@@ -220,19 +225,19 @@ func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
+func LeaveChatHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var chat struct {
 			Data structs.Chat `json:"data"`
 		}
-		id, ok := utils.IdentifyWebOrMobileRequest(r)
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
-		}
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		id, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		err = json.Unmarshal(requestData, &chat)
@@ -254,17 +259,17 @@ func LeaveChatHandler(w http.ResponseWriter, r *http.Request)  {
 
 func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var pool struct{
+		var pool struct {
 			Data structs.Pool `json:"data"`
-		}
-		id, ok := utils.IdentifyWebOrMobileRequest(r)
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		id, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		err = json.Unmarshal(requestData, &pool)
@@ -286,17 +291,17 @@ func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
 
 func CreatePoolHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var pool struct{
-			Data structs.Pool	`json:"data"`
-		}
-		_, ok := utils.IdentifyWebOrMobileRequest(r)
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
+		var pool struct {
+			Data structs.Pool `json:"data"`
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
 			return
 		}
 		err = json.Unmarshal(requestData, &pool)

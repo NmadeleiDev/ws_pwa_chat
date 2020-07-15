@@ -10,7 +10,7 @@ import (
 func (db *PgSqlUserKeysManager) GetUserKeysByName(username string) (secretKey, userSecret string, ok bool) {
 
 	query := `
-SELECT session_secret, user_secret FROM ` + userDataTable +` 
+SELECT session_secret, user_secret FROM ` + userDataTable + ` 
 WHERE username=$1`
 
 	if err := db.connection.QueryRow(query, username).Scan(&secretKey, &userSecret); err != nil {

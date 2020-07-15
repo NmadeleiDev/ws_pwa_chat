@@ -23,24 +23,24 @@ const (
 )
 
 type Client struct {
-	User				*structs.User
-	Connection			*websocket.Conn
-	ReadMessageChan		chan structs.SocketMessage
-	ClientExitChan		chan byte
+	User            *structs.User
+	Connection      *websocket.Conn
+	ReadMessageChan chan structs.SocketMessage
+	ClientExitChan  chan byte
 }
 
 type ServerClientMessage struct {
-	Type				string		`json:"type"`
-	Data				[]byte		`json:"data"`
+	Type string `json:"type"`
+	Data []byte `json:"data"`
 }
 
-func	CreateNewClient(connection *websocket.Conn, user *structs.User) (client *Client) {
+func CreateNewClient(connection *websocket.Conn, user *structs.User) (client *Client) {
 
-	client = &Client{User:user, Connection:connection, ReadMessageChan:make(chan structs.SocketMessage), ClientExitChan: make(chan byte)}
+	client = &Client{User: user, Connection: connection, ReadMessageChan: make(chan structs.SocketMessage), ClientExitChan: make(chan byte)}
 	return client
 }
 
-func	(client *Client) SubscribeToDBEvents() {
+func (client *Client) SubscribeToDBEvents() {
 
 	// TODO зачем я подписываюсь на каждую коллекцию отдельно, занимая память горутинами, если можно подписаться на базу?
 	for _, chat := range client.User.Chats {

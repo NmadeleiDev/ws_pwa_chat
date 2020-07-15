@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func	(client *Client) WriteHub() {
+func (client *Client) WriteHub() {
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -24,7 +24,7 @@ func	(client *Client) WriteHub() {
 
 	for {
 		select {
-		case message := <- client.ReadMessageChan:
+		case message := <-client.ReadMessageChan:
 			err := client.Connection.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				log.Error("Error setting write deadline: ", err)
@@ -59,11 +59,10 @@ func	(client *Client) WriteHub() {
 				log.Error("Error writing ticker message to ws: ", err)
 				return
 			}
-		case <- client.ClientExitChan:
+		case <-client.ClientExitChan:
 			log.Infof("Exiting write hub for user %v", client.User.Username)
 			return
 		}
 
 	}
 }
-
