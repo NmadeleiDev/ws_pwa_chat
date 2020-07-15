@@ -54,8 +54,8 @@ class WebSocketActions extends Actions<
         const username = store.getters.username()
 
         const token = store.getters.getNewToken(timeStamp)
-        const client = new W3CWebSocket('ws://localhost:8080/api/v1/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
-        // const client = new W3CWebSocket('wss://enchat.ga/api/v1/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
+        // const client = new W3CWebSocket('ws://localhost:8080/api/v1/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
+        const client = new W3CWebSocket('wss://enchat.ga/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
 
         client.onopen = () => {
             this.dispatch('onOpen')
