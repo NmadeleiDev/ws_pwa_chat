@@ -5,8 +5,10 @@
             <v-row align-content="center" class="fill-height">
                 <v-col align-self="center" class="d-flex fill-height flex-column justify-space-between align-center">
                     <v-card class="w-auto h-100 default-dark-db" color="#f6f6f6" elevation="0">
-                        <v-card-title class="d-flex flex-row justify-center">
-                            Welcome back!
+                        <v-card-title class="mt-4 d-flex flex-row justify-center">
+                            <h2>
+                                Welcome back!
+                            </h2>
                         </v-card-title>
                         <v-card-text>
                             <transition enter-active-class="animate__bounceInLeft">

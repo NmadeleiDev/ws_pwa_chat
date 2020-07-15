@@ -38,7 +38,7 @@ class LoginActions extends Actions<
     > {
 
     async signUp(payload: { login: string; password: string }) {
-        console.log("Tring to sign up: ", payload);
+        payload.password = keysGenerator.getSha224(payload.password)
         
         let result = await api.post('signup', {data: {username: payload.login, password: payload.password}, auth: null}, "")
         if (result.status === true) {
@@ -55,6 +55,8 @@ class LoginActions extends Actions<
     }
 
     async signIn(payload: { login: string; password: string }) {
+        payload.password = keysGenerator.getSha224(payload.password)
+
         let result = await api.post('signin', {data: {username: payload.login, password: payload.password}, auth: null}, "")
         if (result.status === true) {
             localStorage.setItem('username', payload.login);
@@ -70,6 +72,8 @@ class LoginActions extends Actions<
     }
 
     async findLocalKeys(payload: { login: string; password: string }) {
+        payload.password = keysGenerator.getSha224(payload.password)
+
         let sessionKey = localStorage.getItem('sessionKey');
         let userSecret = localStorage.getItem('userSecret');
         if (sessionKey && userSecret && userSecret !== '' && sessionKey !== '') {

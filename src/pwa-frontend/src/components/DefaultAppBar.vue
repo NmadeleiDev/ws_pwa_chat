@@ -2,19 +2,23 @@
      <div>
     <v-app-bar
       color="dark accent-4"
-      dense
       dark
       width="100%"
     >
-      <v-toolbar-title>{{name}}</v-toolbar-title>
+      <v-toolbar-title class="ml-1">{{name}}</v-toolbar-title>
 
       <v-spacer></v-spacer>
 
-      <v-icon :color="isOnline ? 'green' : 'red'">offline_bolt</v-icon>
-
-      <v-btn @click="reset()" text>
-        Reset
-      </v-btn>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-icon :color="isOnline ? 'green' : 'red'"
+                  v-on="on"
+                  v-bind="attrs"
+                  class="mr-2"
+          >offline_bolt</v-icon>
+        </template>
+        <span>You are {{isOnline ? 'online' : 'offline'}}</span>
+      </v-tooltip>
 
       <v-menu
         left
@@ -30,10 +34,17 @@
           </v-btn>
         </template>
 
-        <v-list>
+        <v-list nav outlined>
           <v-list-item>
-            <v-list-item-action @click="$router.push('/home')">Chats</v-list-item-action>
-            <v-list-item-action @click="$router.push('/users')">Find user</v-list-item-action>
+            <v-list-item-action @click="$router.push('/home')">My chats</v-list-item-action>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list-item>
+            <v-list-item-action @click="$router.push('/users')">Find users</v-list-item-action>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list-item>
+            <v-list-item-action @click="reset">Logout</v-list-item-action>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -58,6 +69,7 @@
             reset() {
                 localStorage.setItem('sessionKey', '');
                 localStorage.setItem('userSecret', '');
+                this.$router.push("/")
             }
         },
       computed: {

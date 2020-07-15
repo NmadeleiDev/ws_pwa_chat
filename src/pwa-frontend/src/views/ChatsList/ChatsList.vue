@@ -5,7 +5,7 @@
             <v-row>
                 <v-col>
                     <v-list shaped v-if="chats.length > 0" class="mt-0">
-                    <v-subheader>Chats</v-subheader>
+                    <v-subheader class="mt-0 text-lg-h4">Chats</v-subheader>
                     <v-list-item-group color="primary">
                         <v-list-item
                         v-for="(chat, i) in chats"
@@ -13,11 +13,15 @@
                         @click="setChat(chat)"
                         >
                         <v-list-item-icon>
-                            <v-icon v-if="chat.usernames.length <= 2">person</v-icon>
-                            <v-icon v-else>people</v-icon>
+                            <v-icon large v-if="chat.usernames.length <= 2"
+                            :color="chat.messages.find(item => item.state < 3) !== undefined ? 'green' : 'dark'">person</v-icon>
+                            <v-icon large v-else
+                            :color="chat.messages.find(item => item.state < 3) !== undefined ? 'green' : 'dark'">people</v-icon>
                         </v-list-item-icon>
                         <v-list-item-content>
-                            <v-list-item-title v-text="chat.name"></v-list-item-title>
+                            <v-list-item-title>
+                                <h4>{{ chat.name }}</h4>
+                            </v-list-item-title>
                             <v-list-item-subtitle v-text="getLastMessage(chat)"></v-list-item-subtitle>
                         </v-list-item-content>
                         </v-list-item>
@@ -25,8 +29,8 @@
                     </v-list>
 
                     <v-sheet v-else class="mt-8 d-flex flex-column justify-space-around align-center">
-                        <h4>No chats yet!</h4>
-                        <v-btn @click="$router.push('/users')" text>Find user</v-btn>
+                        <h3>No chats yet!</h3>
+                        <v-btn large @click="$router.push('/users')" text>Find user</v-btn>
                     </v-sheet>
                 </v-col>
             </v-row>

@@ -1,10 +1,9 @@
 <template>
     <v-app-bar
             color="accent-4"
-            dense
             dark
     >
-        <v-toolbar-title>Login</v-toolbar-title>
+        <v-toolbar-title>Sign in to Enchat</v-toolbar-title>
 
         <v-spacer></v-spacer>
     </v-app-bar>

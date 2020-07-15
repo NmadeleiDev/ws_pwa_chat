@@ -88,9 +88,14 @@ class WebSocketActions extends Actions<
 
     onMessage(message: any) {
         console.log("Got message in ws: ", message)
-        let data = <ServerToClientMessage>JSON.parse(message)
+        let data = JSON.parse(message) as ServerToClientMessage
         if (data.type === MessageType) {
-            store.commit('addMessageToItsChat', <WebSocketChatMessage>data.data)
+            let message: Message = data.data as Message
+            store.commit('addMessageToItsChat', message)
+            if (message.sender !== store.getters.username()) {
+                message.state = 3
+                this.dispatch('sendSocketMessage', {type: 2, message: message})
+            }
         } else {
             const timeStamp: string = Date.now().toString()
 
@@ -109,9 +114,9 @@ class WebSocketActions extends Actions<
                         messages: new Array<Message>()
                     }
                     if (Array.isArray(result.data)) {
-                        newChat.messages = <Array<Message>>result.data
+                        newChat.messages = result.data as Array<Message>
                     }
-                    store.commit('addChat', <Chat>data.data)
+                    store.commit('addChat', data.data as Chat)
                 })
         }
     }
