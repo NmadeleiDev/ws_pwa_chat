@@ -33,6 +33,8 @@ type UserKeysData interface {
 	SetUserSecret(user structs.User) bool
 	SetSessionKeyById(sessionKey string, id int) bool
 	UpdateSessionKey(old, new string) bool
+
+	GetUserIdByName(name string) (string, bool)
 }
 
 func Init() {

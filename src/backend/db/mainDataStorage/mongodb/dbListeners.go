@@ -92,15 +92,23 @@ func (db *MongoMainDataStorage) ListenUserChatsStream(user *structs.User, client
 			if stream.TryNext(context.TODO()) {
 				chat := structs.Chat{}
 				current := stream.Current
-				chatsObjName := getChatsObjName(len(user.Chats)) // Объясняю: монго возвращает вставленный чат не просто как объект, а как массив с одмин чатом, с названием по форме "chats.{номер вставленного чата}", поэтому, чтобы его найти, приходится создавать именно такое название
+				chatsObjName := getChatsObjName(len(user.Chats)) // Объясняю: монго возвращает вставленный чат не просто как объект, а как массив с одним чатом, с названием по форме "chats.{номер вставленного чата}", поэтому, чтобы его найти, приходится создавать именно такое название
 				log.Info("Chat obj: ", chatsObjName)
-				rawData := current.Lookup("updateDescription", "updatedFields", chatsObjName)
+				//rawData := current.Lookup("updateDescription", "updatedFields", chatsObjName)
+				rawData := current.Lookup("updateDescription", "updatedFields", "chats")
 				if len(user.Chats) > 0 { // Про это условние!! Когда у юзера создается первый чат, монго, видимо, видит это как создание именно массива, а не добавления в массив элемента, и возвращает массив. Поэтому нужно это условие
-					err = rawData.Unmarshal(&chat)
+					//err = rawData.Unmarshal(&chat)
+					var chatsArr []structs.Chat
+					err = rawData.Unmarshal(&chatsArr)
+					if len(chatsArr) > len(user.Chats) {
+						chat = chatsArr[len(user.Chats)]
+					}
 				} else {
 					var chatsArr []structs.Chat
 					err = rawData.Unmarshal(&chatsArr)
-					chat = chatsArr[0]
+					if len(chatsArr) > 0 {
+						chat = chatsArr[0]
+					}
 				}
 				if err != nil {
 					log.Errorf("error getting updated chat: %v; chat: %v; current: %v;", err, rawData, current)

@@ -35,3 +35,18 @@ type Pool struct {
 	PoolId   string `json:"poolId"`
 	Password string `json:"password"`
 }
+
+type ChatWithMessages struct {
+	ChatId            string    `json:"id" bson:"chatid"`
+	Name              string    `json:"name" bson:"name"`
+	Usernames         []string  `json:"usernames" bson:"usernames"`
+	Admin             string    `json:"admin" bson:"admin"`
+	MessagePoolId     string    `json:"-" bson:"messagepoolid"`
+	LastReadMessageId string    `json:"lastReadMessageId" bson:"last_read_message_id"`
+	Messages          []Message `json:"messages" bson:"-"`
+}
+
+type ChatInfo struct {
+	ChatId        string `json:"id" bson:"chatid"`
+	MessagePoolId string `json:"-" bson:"messagepoolid"`
+}

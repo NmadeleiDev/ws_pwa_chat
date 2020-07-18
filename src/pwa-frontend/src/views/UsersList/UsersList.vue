@@ -6,7 +6,7 @@
                 <v-col>
                     <v-list shaped v-if="users.length > 1">
                         <v-subheader>Users</v-subheader>
-                        <v-text-field placeholder="Find user" v-model="filter"></v-text-field>
+                        <v-text-field class="ml-2 mr-2" placeholder="Find user" v-model="filter"></v-text-field>
                         <v-list-item-group color="primary">
                             <v-list-item
                                     v-for="(user, i) in users.filter(item => item.username.includes(filter) && (item.username !== username))"

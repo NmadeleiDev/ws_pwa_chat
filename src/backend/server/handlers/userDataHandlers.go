@@ -39,7 +39,7 @@ func CreateChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		var chatData struct {
-			Data structs.Chat `json:"data"`
+			Data structs.ChatWithMessages `json:"data"`
 		}
 		requestData, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -144,7 +144,7 @@ func AddUserToChatHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		id, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
 		if !ok {
 			utils.SendFailResponse(w, "Unauthorized request")
 			return
@@ -155,12 +155,16 @@ func AddUserToChatHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		userToAddData.Data.User.Id = id
+		userToAddData.Data.User.Id, ok = userKeysData.Manager.GetUserIdByName(userToAddData.Data.User.Username)
+		if !ok {
+			utils.SendFailResponse(w, "user to add not found")
+			return
+		}
 		if !mainDataStorage.Manager.AddUserToChatMembers(userToAddData.Data.Chat.ChatId, userToAddData.Data.User) {
 			utils.SendFailResponse(w, "error")
 			return
 		}
-		if !mainDataStorage.Manager.AddChatToUserChats(userToAddData.Data.Chat, []string{userToAddData.Data.User.Username}) {
+		if !mainDataStorage.Manager.AddChatToUserChats(structs.ChatInfo{ChatId: userToAddData.Data.Chat.ChatId, MessagePoolId: userToAddData.Data.Chat.MessagePoolId}, []string{userToAddData.Data.User.Username}) {
 			utils.SendFailResponse(w, "error")
 			return
 		}

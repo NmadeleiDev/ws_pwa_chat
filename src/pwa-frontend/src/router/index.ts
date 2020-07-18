@@ -21,7 +21,7 @@ Vue.use(VueRouter)
     component: () => import(/* webpackChunkName: "about" */ '../views/UsersList/UsersList.vue')
   },
   {
-    path: '/chat',
+    path: '/chat/:id',
     name: 'Chat here',
     component: () => import(/* webpackChunkName: "about" */ '../views/Chat/Chat.vue')
   }

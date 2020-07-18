@@ -287,3 +287,19 @@ WHERE id=$2`
 	}
 	return true
 }
+
+func (db *PgSqlUserKeysManager) GetUserIdByName(name string) (string, bool) {
+	var id string
+
+	query := `
+SELECT id
+FROM ` + userDataTable + `
+WHERE username=$1`
+
+	row := db.connection.QueryRow(query, name)
+	if err := row.Scan(&id); err != nil {
+		log.Error("Error getting pool password: ", err)
+		return "", false
+	}
+	return id, true
+}

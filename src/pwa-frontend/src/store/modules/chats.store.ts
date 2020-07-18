@@ -32,9 +32,27 @@ class ChatsGetters extends Getters<ChatsState> {
     isNew() {
         return this.state.isNew
     }
+
+    getChatById(chatId: string): Chat {
+        const data = this.state.chats.find(item => item.id === chatId)
+        if (data === undefined) {
+            return <Chat>{id: "", name: "Chat", messages: [], usernames: [store.getters.username()], admin: store.getters.username()}
+        } else {
+            return data
+        }
+    }
 }
 
 class ChatsMutations extends Mutations<ChatsState> {
+    sortChats() {
+        this.state.chats.sort((a: Chat, b: Chat) => {
+            if (a.messages.length > 0 && b.messages.length > 0) {
+                return b.messages[b.messages.length - 1].date - a.messages[a.messages.length - 1].date
+            }
+            return 1
+        })
+    }
+
     setChats(payload: Array<Chat>) {
         this.state.chats.splice(0, this.state.chats.length)
         payload.forEach(chat => {
@@ -57,6 +75,14 @@ class ChatsMutations extends Mutations<ChatsState> {
         })
     }
 
+    addMessageToCurrentChat(payload: Message) {
+        try {
+            this.state.currentChat.messages.push(payload)
+        } catch (e) {
+            console.log("Failed to push to current chat: ", e)
+        }
+    }
+
     addChat(payload: Chat) {
         console.log("Adding chat: ", payload)
         if (payload.messages === undefined) {
@@ -71,8 +97,38 @@ class ChatsMutations extends Mutations<ChatsState> {
         this.state.currentChat = payload
     }
 
+    setCurrentChatId(id: string) {
+        this.state.currentChat.id = id
+    }
+
+    setChatData(payload: Chat) {
+        const chat = this.state.chats.find(item => item.id === payload.id)
+        if (chat !== undefined) {
+            chat.name = payload.name
+            chat.usernames = payload.usernames
+            chat.admin = payload.admin
+        } else {
+            this.state.chats.push(payload)
+        }
+    }
+
+    setCurrentChatName(name: string) {
+        if (this.state.isNew) {
+            this.state.currentChat.name = name
+            return
+        }
+        const chat = this.state.chats.find(item => item.id === this.state.currentChat.id)
+        if (chat !== undefined) {
+            chat.name = name
+        }
+    }
+
     setNewValue(payload: boolean) {
         this.state.isNew = payload;
+    }
+
+    setMessageState(payload: {message: Message, state: number}) {
+        payload.message.state = payload.state
     }
 }
 
@@ -83,8 +139,20 @@ class ChatsActions extends Actions<
     ChatsActions
     > {
     async sendMessageInChat(payload: string) {
+        const message: Message = {
+            id: this.state.generateMessageId(),
+            sender: store.getters.username(),
+            chatId: this.state.currentChat.id,
+            date: Date.now(),
+            state: 1,
+            text: payload,
+            attachedFilePath: ''
+        }
+
         if (this.state.isNew) {
             const timeStamp: string = Date.now().toString()
+
+            this.commit('addMessageToCurrentChat', message)
 
             let result = await api.post("chat", {data: this.state.currentChat, auth: {username: store.getters.username(), token: store.getters.getNewToken(timeStamp)}}, timeStamp)
             if (result.status !== true) {
@@ -96,24 +164,16 @@ class ChatsActions extends Actions<
                 admin: result.data.admin,
                 name: result.data.name,
                 usernames: result.data.usernames,
-                messages: new Array<Message>()
+                messages: [message] as Array<Message>
             }
             this.commit('addChat', newChat)
             this.commit('setCurrentChat', newChat)
             this.commit('setNewValue', false);
+        } else {
+            await store.dispatch('sendSocketMessage', {type: 1, message: message})
         }
 
-        const message: Message = {
-            id: this.state.generateMessageId(),
-            sender: store.getters.username(),
-            chatId: this.state.currentChat.id,
-            date: Date.now(),
-            state: 1,
-            text: payload,
-            attachedFilePath: ''
-        }
         this.commit('addMessageToItsChat', message)
-        await store.dispatch('sendSocketMessage', {type: 1, message: message})
     }
 
     async setCurrentChat(payload: {data: Chat | User, isNew: boolean}) {
@@ -134,7 +194,7 @@ class ChatsActions extends Actions<
             this.commit('setNewValue', false);
             chat.messages.forEach(message => {
                 if (message.sender !== store.getters.username() && message.state !== 3) {
-                    message.state = 3
+                    this.commit('setMessageState', {message: message, state: 3})
                     store.dispatch('sendSocketMessage', {type: 2, message: message})
                 }
             })
@@ -153,7 +213,46 @@ class ChatsActions extends Actions<
             chat.messages = !result.data ? [] : <Array<Message>>result.data
         }))
         this.commit('setChats', payload)
+        this.commit('sortChats')
     }
+
+    saveCurrentChatName(name: string) {
+        this.commit('setCurrentChatName', name)
+        const currentChat = this.getters.getCurrentChat()
+        if (currentChat === undefined)
+            return
+        const timeStamp: string = Date.now().toString()
+        api.post("name", {data:
+        {
+            id: currentChat.id,
+            name: currentChat.name,
+        },
+        auth: {
+            username: store.getters.username(), token: store.getters.getNewToken(timeStamp)
+        }}, timeStamp).catch(console.warn)
+    }
+
+    async addUserToCurrentChat(username: string) {
+        const timeStamp: string = Date.now().toString()
+
+        const result = await api.post("add", {auth: {
+                username: store.getters.username(),
+                token: store.getters.getNewToken(timeStamp)
+            }, data: {
+                user: {username: username},
+                chat: this.getters.getCurrentChat()
+            }}, timeStamp)
+        if (result.status !== true) {
+            console.log("Error add to chat: ", result.data)
+            return false
+        }
+        return true
+    }
+
+    setCurrentChatId(id: string) {
+        this.commit('setCurrentChatId', id)
+    }
+
 }
 
 export const Chats = new Module({

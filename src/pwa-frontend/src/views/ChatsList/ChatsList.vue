@@ -4,14 +4,13 @@
         <v-main>
             <v-row>
                 <v-col>
-                    <v-list shaped v-if="chats.length > 0" class="mt-0">
+                    <v-list outlined shaped v-if="chats.length > 0" class="mt-0">
                     <v-subheader class="mt-0 text-lg-h4">Chats</v-subheader>
                     <v-list-item-group color="primary">
                         <v-list-item
                         v-for="(chat, i) in chats"
                         :key="i"
-                        @click="setChat(chat)"
-                        >
+                        @click="setChat(chat)">
                         <v-list-item-icon>
                             <v-icon large v-if="chat.usernames.length <= 2"
                             :color="chat.messages.find(item => item.state < 3) !== undefined ? 'green' : 'dark'">person</v-icon>
@@ -19,10 +18,14 @@
                             :color="chat.messages.find(item => item.state < 3) !== undefined ? 'green' : 'dark'">people</v-icon>
                         </v-list-item-icon>
                         <v-list-item-content>
-                            <v-list-item-title>
-                                <h4>{{ chat.name }}</h4>
+                            <v-list-item-title class="mb-1 d-flex flex-row justify-space-between align-start">
+                                <h4 class="height-auto">{{ chat.name }}</h4>
+                                <v-chip v-if="getNumberOfUnread(chat)" class="height-auto">{{getNumberOfUnread(chat)}}</v-chip>
                             </v-list-item-title>
-                            <v-list-item-subtitle v-text="getLastMessage(chat)"></v-list-item-subtitle>
+                            <v-list-item-subtitle class="d-flex flex-row justify-space-between align-start">
+                                <v-subheader class="ml-0 pl-0 height-auto">{{getLastMessageText(chat)}}</v-subheader>
+                                <v-subheader class="height-auto pr-0">{{getLastMessageTime(chat)}}</v-subheader>
+                            </v-list-item-subtitle>
                         </v-list-item-content>
                         </v-list-item>
                     </v-list-item-group>
@@ -46,22 +49,39 @@
     export default Vue.extend( {
         name: "ChatsList",
         components: {DefaultAppBar},
-        created() {
-            this.$store.dispatch('initUserState')
-        },
         methods: {
             setChat(chat: Chat) {
                 this.$store.dispatch('setCurrentChat', {data: chat, isNew: false})
-                this.$router.push('/chat')
+                this.$router.push('/chat/' + chat.id)
             },
-            getLastMessage(chat: Chat): string {
-                let len = chat.messages.length
+            getLastMessageText(chat: Chat): string {
+                const len = chat.messages.length
                 if (len > 0) {
                     return chat.messages[len - 1].sender + ': ' + chat.messages[len - 1].text
                 } else {
                     return ''
                 }
-            }
+            },
+            getLastMessageTime(chat: Chat): string {
+                const len = chat.messages.length
+                if (len > 0) {
+                    return this.formatDate(chat.messages[len - 1].date)
+                } else {
+                    return ''
+                }
+            },
+            getNumberOfUnread(chat: Chat): string {
+                const num = chat.messages.filter(item => item.state !== 3).length
+                if (num > 0) {
+                    return num.toString()
+                } else {
+                    return ''
+                }
+            },
+            formatDate(timestamp: number): string {
+                const date = new Date(timestamp)
+                return (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':' + (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes())
+            },
         },
         computed: {
             username(): string {
@@ -74,6 +94,8 @@
     })
 </script>
 
-<style scoped>
-
+<style>
+.height-auto {
+    height: auto;
+}
 </style>

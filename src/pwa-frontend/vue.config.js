@@ -1,4 +1,10 @@
 module.exports = {
+  "pwa": {
+    "manifestOptions": {
+      "name": "Enchat",
+      "short_name": "Enchat",
+    }
+  },
   "transpileDependencies": [
     "vuetify"
   ],

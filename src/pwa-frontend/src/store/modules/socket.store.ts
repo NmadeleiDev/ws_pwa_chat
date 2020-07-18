@@ -39,10 +39,10 @@ class WebSocketActions extends Actions<
     > {
 
     sendSocketMessage(payload: WebSocketChatMessage) {
-        if (this.state.client !== undefined)
+        if (this.state.client !== undefined && this.state.isConnected)
             this.state.client.send(JSON.stringify(payload))
         else {
-            console.log("Error! Client undefined!")
+            console.log("Error! IsConnected: ", this.state.isConnected, " Client: ", this.state.client)
         }
     }
 
@@ -54,8 +54,8 @@ class WebSocketActions extends Actions<
         const username = store.getters.username()
 
         const token = store.getters.getNewToken(timeStamp)
-        // const client = new W3CWebSocket('ws://localhost:8080/api/v1/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
-        const client = new W3CWebSocket('wss://enchat.ga/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
+        const client = new W3CWebSocket('ws://localhost:8080/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
+        // const client = new W3CWebSocket('wss://enchat.ga/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
 
         client.onopen = () => {
             this.dispatch('onOpen')
@@ -95,31 +95,90 @@ class WebSocketActions extends Actions<
             if (message.sender !== store.getters.username()) {
                 message.state = 3
                 this.dispatch('sendSocketMessage', {type: 2, message: message})
+                this.dispatch('notifyUser', data)
             }
-        } else {
+        } else if (data.type === ChatType) {
             const timeStamp: string = Date.now().toString()
+            const chat: Chat = <Chat>data.data
 
-            api.post('messages', {data: <Chat>data.data, auth: {username: store.getters.username(), token: store.getters.getNewToken(timeStamp)}}, timeStamp)
-                .then(result => {
-                    if (result.status !== true) {
-                        console.log("Error loading messages")
-                        return
+            if (store.getters.getChatById(chat.id).id !== "") {
+                store.commit('setChatData', chat)
+                console.log("Found and updated chat " + chat.name)
+                return
+            }
+
+            if (chat.admin !== store.getters.username()) {
+                this.dispatch('notifyUser', data)
+                api.post('messages', {data: chat, auth: {username: store.getters.username(), token: store.getters.getNewToken(timeStamp)}}, timeStamp)
+                    .then(result => {
+                        if (result.status !== true) {
+                            console.log("Error loading messages")
+                            return
+                        }
+                        if (Array.isArray(result.data)) {
+                            chat.messages = result.data as Array<Message>
+                        }
+                        store.commit('addChat', chat)
+                    })
+            }
+        }
+        store.commit('sortChats')
+    }
+
+    notifyUser(payload: ServerToClientMessage) {
+        let title = ''
+        let body = ''
+        let actions: { action: string; title: string; }[] = []
+        if (payload.type === MessageType) {
+            let message: Message = payload.data as Message
+            let chat: Chat = store.getters.getChatById(message.chatId)
+            title = 'New message in ' + chat.name
+            body = message.sender + ': ' + message.text
+            actions = [
+                {
+                    action: 'open',
+                    title: 'Open ' + chat.name
+                }
+            ]
+        } else if (payload.type === ChatType) {
+            let chat: Chat = payload.data as Chat
+            title = "You've been added to chat " + chat.name
+            body = 'Chat members: ' + chat.usernames.join(', ')
+            actions = [
+                {
+                    action: 'open',
+                    title: 'Open ' + chat.name
+                }
+            ]
+        }
+
+        if (Notification.permission === 'granted') {
+            navigator.serviceWorker.getRegistration()
+                .then((reg) => {
+                        if(reg == undefined){
+                            console.log("only works online")
+                            return
+                        }
+                        let options = {
+                            body: body,
+                            // icon: './static/img/notification-flat.png',
+                            vibrate: [100, 50, 100],
+                            data: {
+                                dateOfArrival: Date.now(),
+                                primaryKey: 1
+                            },
+                            actions: actions
+                        }
+                        reg.showNotification(title, options).catch(console.warn)
                     }
-                    let chat = <Chat>data.data
-                    const newChat: Chat =  {
-                        id: chat.id,
-                        admin: chat.admin,
-                        name: chat.name,
-                        usernames: chat.usernames,
-                        messages: new Array<Message>()
-                    }
-                    if (Array.isArray(result.data)) {
-                        newChat.messages = result.data as Array<Message>
-                    }
-                    store.commit('addChat', data.data as Chat)
-                })
+                )
+        } else {
+            Notification.requestPermission((status) =>  {
+                console.log('Notification permission status:', status);
+            }).catch(console.warn);
         }
     }
+
 }
 
 export const WebSocket = new Module({

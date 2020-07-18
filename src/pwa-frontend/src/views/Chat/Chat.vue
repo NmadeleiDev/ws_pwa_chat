@@ -1,26 +1,26 @@
 <template>
-    <v-app  class="position-relative">
+    <v-app class="position-relative d-flex flex-column">
         <DefaultAppBar :name="chat !== undefined ? chat.name : 'Error loading chat'"></DefaultAppBar>
-        <v-main v-if="chat !== undefined" class="fill-height">
-            <v-row class="fill-height">
-                <v-col class="fill-height">
-                    <div class="fill-height w-100 d-flex flex-column justify-space-between align-center">
-                        <div v-if="chat.messages.length > 0" class="mt-0 fill-height fill-width d-flex flex-column">
+        <div v-if="chat !== undefined" class="flex-grow-1 d-flex flex-column">
+            <div class="flex-grow-1">
+                <div class="d-flex flex-column">
+                    <div class="flex-grow-1 w-100 d-flex flex-column justify-space-between align-center">
+                        <div v-if="chat.messages.length > 0" class="mt-0 flex-grow-1 fill-width d-flex flex-column-reverse">
                             <v-sheet
                                     rounded
                                     color="grey lighten-2"
                                     :class="'pl-3 pb-1 mb-2 d-flex flex-column justify-space-around align-start ' +
                                     (message.sender === username ? 'align-self-end mr-4' : 'align-self-start ml-4')"
-                                    v-for="(message, i) in chat.messages"
+                                    v-for="(message, i) in chat.messages.concat([]).reverse()"
                                     :key="i">
-                                <div class="d-flex flex-row justify-space-between mb-0">
-                                    <v-subheader>{{chat.usernames.length > 2 ? message.sender: ''}}</v-subheader>
-                                    <v-subheader>{{formatDate(message.date)}}</v-subheader>
+                                <div class="mt-2 mb-1 d-flex flex-row justify-space-between">
+                                    <v-subheader class="pl-0 ml-0 height-auto">{{chat.usernames.length > 2 ? message.sender: ''}}</v-subheader>
+                                    <v-subheader class="height-auto">{{formatDate(message.date)}}</v-subheader>
                                 </div>
                                 <div class="wrap">
                                     {{message.text}}
                                 </div>
-                                <v-icon small
+                                <v-icon v-if="message.sender === username" small
                                         class="align-self-end pr-2"
                                         :color="getCheckColor(message)">check</v-icon>
                             </v-sheet>
@@ -30,25 +30,25 @@
                         </v-sheet>
                         <v-sheet dark class="message-input">
                             <v-textarea
-                                    class="w-100 pl-4 mr-4 ml-0"
-                                    filled
+                                    class="w-100 pl-4 mr-4 ml-0 input-color"
+                                    solo
+                                    light
                                     auto-grow
                                     type="text"
-                                    color="green"
                                     rows="1"
                                     v-model="message"
                             >
                                 <template v-slot:append-outer>
-                                    <v-btn icon @click="sendMessage()">
-                                        <v-icon large :color="message === '' ? '' : 'green'">send</v-icon>
+                                    <v-btn light class="pb-3" icon @click="sendMessage()">
+                                        <v-icon light large :color="message === '' ? 'white' : 'green'">send</v-icon>
                                     </v-btn>
                                 </template>
                             </v-textarea>
                         </v-sheet>
                     </div>
-                </v-col>
-            </v-row>
-        </v-main>
+                </div>
+            </div>
+        </div>
     </v-app>
 </template>
 
@@ -65,6 +65,12 @@
         data: () => {
             return {
                 message: '',
+            }
+        },
+        created() {
+            if (this.chat === undefined) {
+                const chatId = this.$route.params.id
+                this.$store.dispatch('setCurrentChatId', chatId)
             }
         },
         methods: {
@@ -102,12 +108,19 @@
 
 <style scoped>
 .message-input {
-    position: fixed;
-    bottom: 0;
     width: 100%;
+    padding: 8px 0 0 0;
 }
 
     .fill-width {
         width: 100%;
+    }
+.height-auto {
+    height: auto;
+}
+
+
+    .input-color {
+        color: black;
     }
 </style>

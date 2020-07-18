@@ -218,7 +218,7 @@ func (db *MongoMainDataStorage) DeleteMessage(messagePoolId string, message stru
 	log.Infof("Deleted %v document message", result.DeletedCount)
 }
 
-func (db *MongoMainDataStorage) CreateChat(newChat structs.Chat) (structs.Chat, error) {
+func (db *MongoMainDataStorage) CreateChat(newChat structs.ChatWithMessages) (structs.ChatWithMessages, error) {
 
 	database := db.client.Database(usersDb)
 	chatsCollection := database.Collection(chatsDataCollection)
@@ -226,14 +226,19 @@ func (db *MongoMainDataStorage) CreateChat(newChat structs.Chat) (structs.Chat, 
 	newMessagePoolId := fmt.Sprintf("%x", md5.Sum([]byte(time.Now().String()+strconv.Itoa(rand.Int())+strings.Join(newChat.Usernames, "hi!"))))
 	newChat.MessagePoolId = newMessagePoolId
 
-	res, err := chatsCollection.InsertOne(context.TODO(), newChat)
+	chatData := structs.Chat{MessagePoolId: newMessagePoolId, ChatId: newChat.ChatId, Admin: newChat.Admin, Usernames: newChat.Usernames, Name: newChat.Name, LastReadMessageId: newChat.LastReadMessageId}
+	res, err := chatsCollection.InsertOne(context.TODO(), chatData)
 	if err != nil {
 		log.Error("Error inserting chat to mongo: ", err)
-		return structs.Chat{}, err
+		return structs.ChatWithMessages{}, err
 	}
 	newChat.ChatId = strings.Split(res.InsertedID.(primitive.ObjectID).String(), "\"")[1]
 
-	db.AddChatToUserChats(newChat, newChat.Usernames)
+	db.AddChatToUserChats(structs.ChatInfo{ChatId: newChat.ChatId, MessagePoolId: newChat.MessagePoolId}, newChat.Usernames)
+
+	for _, message := range newChat.Messages {
+		db.WriteNewMessage(newMessagePoolId, message)
+	}
 
 	return newChat, nil
 }
@@ -280,7 +285,7 @@ func (db *MongoMainDataStorage) DeleteUserFromChatMembers(chatId string, usernam
 	return true
 }
 
-func (db *MongoMainDataStorage) AddChatToUserChats(chat structs.Chat, usernames []string) bool {
+func (db *MongoMainDataStorage) AddChatToUserChats(chat structs.ChatInfo, usernames []string) bool {
 	database := db.client.Database(usersDb)
 	userCollection := database.Collection(usersDataCollection)
 

@@ -17,10 +17,10 @@ type MainDataManager interface {
 	WriteNewMessage(messagePoolId string, message structs.Message)
 	UpdateMessage(messagePoolId string, message structs.Message)
 	DeleteMessage(messagePoolId string, message structs.Message)
-	CreateChat(newChat structs.Chat) (structs.Chat, error)
+	CreateChat(newChat structs.ChatWithMessages) (structs.ChatWithMessages, error)
 	AddUserToChatMembers(chatId string, user structs.User) bool
 	DeleteUserFromChatMembers(chatId string, username string) bool
-	AddChatToUserChats(chat structs.Chat, usernames []string) bool
+	AddChatToUserChats(chat structs.ChatInfo, usernames []string) bool
 	DeleteChatFromUserChats(chat structs.Chat, username string) bool
 	EditChatName(chat structs.Chat) bool
 	UpdateLastReadMessageId(message structs.Message, username string) bool

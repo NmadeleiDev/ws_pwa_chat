@@ -71,8 +71,7 @@ class LoginActions extends Actions<
         return false
     }
 
-    async findLocalKeys(payload: { login: string; password: string }) {
-        payload.password = keysGenerator.getSha224(payload.password)
+    async findLocalKeys() {
 
         let sessionKey = localStorage.getItem('sessionKey');
         let userSecret = localStorage.getItem('userSecret');
