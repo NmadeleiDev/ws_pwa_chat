@@ -2,8 +2,8 @@
     <v-app class="position-relative d-flex flex-column">
         <DefaultAppBar :name="chat !== undefined ? chat.name : 'Error loading chat'"></DefaultAppBar>
         <div v-if="chat !== undefined" class="flex-grow-1 d-flex flex-column">
-            <div class="flex-grow-1">
-                <div class="d-flex flex-column">
+            <div class="d-flex flex-column flex-grow-1">
+                <div class="d-flex flex-column flex-grow-1">
                     <div class="flex-grow-1 w-100 d-flex flex-column justify-space-between align-center">
                         <div v-if="chat.messages.length > 0" class="mt-0 flex-grow-1 fill-width d-flex flex-column-reverse">
                             <v-sheet
@@ -25,7 +25,7 @@
                                         :color="getCheckColor(message)">check</v-icon>
                             </v-sheet>
                         </div>
-                        <v-sheet v-else class="mt-8 d-flex flex-column justify-space-around align-center">
+                        <v-sheet v-else class="mt-8 flex-grow-1 d-flex flex-column justify-space-around align-center">
                             <h4>No messages yet!</h4>
                         </v-sheet>
                         <v-sheet dark class="message-input">
@@ -68,7 +68,8 @@
             }
         },
         created() {
-            if (this.chat === undefined) {
+            console.log("Cre: ", this.chat, this.$store.getters.isNew())
+            if (this.chat === undefined && !this.$store.getters.isNew()) {
                 const chatId = this.$route.params.id
                 this.$store.dispatch('setCurrentChatId', chatId)
             }
@@ -97,10 +98,11 @@
         },
         computed: {
             chat(): Chat | undefined {
+                console.log("Current: ", this.$store.getters.getCurrentChat())
                 return this.$store.getters.getCurrentChat()
             },
             username(): string {
-                return this.$store.getters.username();
+                return this.$store.getters.username()
             }
         }
     })

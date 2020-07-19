@@ -57,7 +57,7 @@
         methods: {
             setChat(user: User) {
                 this.$store.dispatch('setCurrentChat', {data: user, isNew: true})
-                this.$router.push('/chat')
+                this.$router.push('/chat/' + user.username)
             }
         },
         computed: {
