@@ -201,6 +201,35 @@ func SaveChatNameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func SaveChatStorePeriodHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var newChatData struct {
+			Data structs.Chat `json:"data"`
+		}
+
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for chat name edit: ", err)
+			return
+		}
+		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
+			return
+		}
+		err = json.Unmarshal(requestData, &newChatData)
+		if err != nil {
+			log.Error("Can't parse request body for chat name edit: ", err)
+			return
+		}
+		if !mainDataStorage.Manager.EditChatStorePeriod(newChatData.Data) {
+			utils.SendFailResponse(w, "error")
+			return
+		}
+		utils.SendSuccessResponse(w)
+	}
+}
+
 func UpdateLastReadMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var message struct {
@@ -261,8 +290,8 @@ func LeaveChatHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
+func ManagePoolHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost { // добавление пользователя в пул
 		var pool struct {
 			Data structs.Pool `json:"data"`
 		}
@@ -281,7 +310,35 @@ func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
 			log.Error("Can't parse request body for login: ", err)
 			return
 		}
-		if userKeysData.Manager.TryPoolSignIn(pool.Data) {
+		if pool.Data.PoolId == "" || userKeysData.Manager.TryPoolSignIn(pool.Data) {
+			if userKeysData.Manager.UpdateUserPoolId(id, pool.Data) {
+				utils.SendSuccessResponse(w)
+			} else {
+				utils.SendFailResponse(w, "error")
+			}
+		} else {
+			utils.SendFailResponse(w, "error")
+		}
+	} else if r.Method == http.MethodPut { // создание пула
+		var pool struct {
+			Data structs.Pool `json:"data"`
+		}
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("Can't read request body for login: ", err)
+			return
+		}
+		id, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+		if !ok {
+			utils.SendFailResponse(w, "Unauthorized request")
+			return
+		}
+		err = json.Unmarshal(requestData, &pool)
+		if err != nil {
+			log.Error("Can't parse request body for login: ", err)
+			return
+		}
+		if userKeysData.Manager.CreatePool(pool.Data) {
 			if userKeysData.Manager.UpdateUserPoolId(id, pool.Data) {
 				utils.SendSuccessResponse(w)
 			} else {
@@ -293,30 +350,30 @@ func JoinUserToPool(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CreatePoolHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		var pool struct {
-			Data structs.Pool `json:"data"`
-		}
-		requestData, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Error("Can't read request body for login: ", err)
-			return
-		}
-		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
-		if !ok {
-			utils.SendFailResponse(w, "Unauthorized request")
-			return
-		}
-		err = json.Unmarshal(requestData, &pool)
-		if err != nil {
-			log.Error("Can't parse request body for login: ", err)
-			return
-		}
-		if userKeysData.Manager.CreatePool(pool.Data) {
-			utils.SendSuccessResponse(w)
-		} else {
-			utils.SendFailResponse(w, "error")
-		}
-	}
-}
+//func CreatePoolHandler(w http.ResponseWriter, r *http.Request) {
+//	if r.Method == http.MethodPost {
+//		var pool struct {
+//			Data structs.Pool `json:"data"`
+//		}
+//		requestData, err := ioutil.ReadAll(r.Body)
+//		if err != nil {
+//			log.Error("Can't read request body for login: ", err)
+//			return
+//		}
+//		_, ok := utils.IdentifyWebOrMobileRequest(requestData, utils.GetCookieValue(r, "session_id"), r.Header.Clone())
+//		if !ok {
+//			utils.SendFailResponse(w, "Unauthorized request")
+//			return
+//		}
+//		err = json.Unmarshal(requestData, &pool)
+//		if err != nil {
+//			log.Error("Can't parse request body for login: ", err)
+//			return
+//		}
+//		if userKeysData.Manager.CreatePool(pool.Data) {
+//			utils.SendSuccessResponse(w)
+//		} else {
+//			utils.SendFailResponse(w, "error")
+//		}
+//	}
+//}

@@ -124,7 +124,7 @@ func AuthMobileToken(requestData []byte, timestamp string) (string, bool) {
 		log.Error("Can't parse request body for login: ", err)
 		return "", false
 	}
-	log.Infof("event time: %v; token: %v", timestamp, requestContent.Auth)
+	//log.Infof("event time: %v; token: %v", timestamp, requestContent.Auth)
 	id, ok := userKeysData.Manager.IdentifyUserByToken(requestContent.Auth, timestamp)
 	if ok {
 		return id, true

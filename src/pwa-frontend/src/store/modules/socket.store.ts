@@ -43,6 +43,7 @@ class WebSocketActions extends Actions<
             this.state.client.send(JSON.stringify(payload))
         else {
             console.log("Error! IsConnected: ", this.state.isConnected, " Client: ", this.state.client)
+            store.dispatch('showCommonNotification', {text: 'Connection error', type: 'error'}).catch(console.error)
         }
     }
 
@@ -54,8 +55,8 @@ class WebSocketActions extends Actions<
         const username = store.getters.username()
 
         const token = store.getters.getNewToken(timeStamp)
-        // const client = new W3CWebSocket('ws://localhost:8080/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
-        const client = new W3CWebSocket('wss://enchat.ga/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
+        const client = new W3CWebSocket('ws://localhost:8080/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
+        // const client = new W3CWebSocket('wss://enchat.ga/ws/connect?user=' + username + '&token=' + token + '&time=' + timeStamp, 'chat')
 
         client.onopen = () => {
             this.dispatch('onOpen')
@@ -71,6 +72,7 @@ class WebSocketActions extends Actions<
 
         client.onerror = () => {
             console.log('Connection Error');
+            store.dispatch('showCommonNotification', {text: 'Connection error', type: 'error'}).catch(console.error)
         };
 
         this.commit('setClient', client)

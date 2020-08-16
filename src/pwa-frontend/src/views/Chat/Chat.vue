@@ -1,6 +1,7 @@
 <template>
     <v-app class="position-relative d-flex flex-column">
         <DefaultAppBar :name="chat !== undefined ? chat.name : 'Error loading chat'"></DefaultAppBar>
+        <CommonNotification></CommonNotification>
         <div v-if="chat !== undefined" class="flex-grow-1 d-flex flex-column">
             <div class="d-flex flex-column flex-grow-1">
                 <div class="d-flex flex-column flex-grow-1">
@@ -55,12 +56,14 @@
 <script lang="ts">
     import {Chat, Message, User} from "@/interfaces/main.ts";
     import DefaultAppBar from "@/components/DefaultAppBar.vue";
+    import CommonNotification from "@/components/CommonNotification.vue";
     import Vue from 'vue';
 
     export default Vue.extend({
         name: "Chat",
         components: {
-            DefaultAppBar
+            DefaultAppBar,
+            CommonNotification
         },
         data: () => {
             return {

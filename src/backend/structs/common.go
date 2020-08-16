@@ -18,6 +18,7 @@ type Chat struct {
 	Admin             string   `json:"admin" bson:"admin"`
 	MessagePoolId     string   `json:"-" bson:"messagepoolid"`
 	LastReadMessageId string   `json:"lastReadMessageId" bson:"last_read_message_id"`
+	StorePeriod       int      `json:"storePeriod" bson:"store_period"`
 }
 
 type Message struct {
@@ -43,6 +44,7 @@ type ChatWithMessages struct {
 	Admin             string    `json:"admin" bson:"admin"`
 	MessagePoolId     string    `json:"-" bson:"messagepoolid"`
 	LastReadMessageId string    `json:"lastReadMessageId" bson:"last_read_message_id"`
+	StorePeriod       int       `json:"storePeriod" bson:"storePeriod"`
 	Messages          []Message `json:"messages" bson:"-"`
 }
 

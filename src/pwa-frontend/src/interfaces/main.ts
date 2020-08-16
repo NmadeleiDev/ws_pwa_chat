@@ -9,6 +9,7 @@ export interface Chat {
     usernames: Array<string>
     admin: string
     messages: Array<Message>
+    storePeriod: number
 }
 
 export interface Message {

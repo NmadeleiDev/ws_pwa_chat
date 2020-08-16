@@ -1,6 +1,7 @@
 import { Getters, Mutations, Actions, Module } from 'vuex-smart-module'
 import api from "@/api/api";
 import keysGenerator from '@/keys/keysGenerator'
+import {store} from "@/store";
 
 // State
 class LoginState {
@@ -51,6 +52,7 @@ class LoginActions extends Actions<
             console.log("Signed up successfully: ", localStorage.getItem('sessionKey'), localStorage.getItem('userSecret'));
             return true;
         }
+        store.dispatch('showCommonNotification', {text: 'Sign up failed. Please, try again.', type: 'error'}).catch(console.error)
         return false
     }
 
@@ -68,6 +70,7 @@ class LoginActions extends Actions<
             console.log("Signed in successfully: ", localStorage.getItem('sessionKey'), localStorage.getItem('userSecret'));
             return true;
         }
+        store.dispatch('showCommonNotification', {text: 'Sign in failed. Please, try again.', type: 'error'}).catch(console.error)
         return false
     }
 

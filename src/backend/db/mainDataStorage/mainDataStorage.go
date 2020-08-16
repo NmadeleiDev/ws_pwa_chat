@@ -23,6 +23,7 @@ type MainDataManager interface {
 	AddChatToUserChats(chat structs.ChatInfo, usernames []string) bool
 	DeleteChatFromUserChats(chat structs.Chat, username string) bool
 	EditChatName(chat structs.Chat) bool
+	EditChatStorePeriod(chat structs.Chat) bool
 	UpdateLastReadMessageId(message structs.Message, username string) bool
 
 	ListenChatMessagesStream(messagePoolId string, chatId string, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage)

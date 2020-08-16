@@ -43,15 +43,18 @@ class UserDataMutations extends Mutations<UserDataState> {
     setToken(payload: string | null) {
         if (payload !== null)
             this.state.token = payload
-        else
+        else {
             console.log("Error!!! Token not found!");
-            
+            store.dispatch('showCommonNotification', {text: 'Your authorization is not valid. Please, try to logout and login again.', type: 'error'}).catch(console.error)
+        }
     }
     setUserSecret(payload: string | null) {
         if (payload !== null)
             this.state.userSecret = payload
-        else
-            console.log("Error!!! Token not found!");
+        else {
+            store.dispatch('showCommonNotification', {text: 'Your authorization is not valid. Please, try to logout and login again.', type: 'error'}).catch(console.error)
+            console.log("Error!!! User Secret not found!");
+        }
     }
     setUsername(payload: string | null) {
         if (payload !== null)
@@ -98,6 +101,7 @@ class UserDataActions extends Actions<
 
             if (result.status !== true) {
                 console.log("Failed to get user data!");
+                store.dispatch('showCommonNotification', {text: 'Error loading your data. Please, try to login again.', type: 'error'}).catch(console.error)
                 return                
             }
 
@@ -121,11 +125,50 @@ class UserDataActions extends Actions<
 
             if (result.status !== true) {
                 console.log("Failed to get users!");
+                store.dispatch('showCommonNotification', {text: 'Error loading users', type: 'error'}).catch(console.error)
                 return
             }
 
             this.commit('setAllUsers', result.data)
         }
+
+        async logInToPool(payload: {poolId: string, poolPassword: string}) {
+            const timeStamp: string = Date.now().toString()
+
+            const result = await api.post('pool', {data: payload, auth: {username: this.state.username, token: keysGenerator.generateToken({
+                        username: this.state.username,
+                        timeStamp: timeStamp,
+                        sessionKey: this.state.token,
+                        userSecret: this.state.userSecret
+                    })}}, timeStamp)
+
+            if (result.status !== true) {
+                console.log("Failed to log in to pool");
+                store.dispatch('showCommonNotification', {text: 'Error logging to pool.', type: 'error'}).catch(console.error)
+                return
+            }
+
+            this.commit('setPool', payload.poolId)
+        }
+
+    async createPool(payload: {poolId: string, poolPassword: string}) {
+        const timeStamp: string = Date.now().toString()
+
+        const result = await api.put('pool', {data: payload, auth: {username: this.state.username, token: keysGenerator.generateToken({
+                    username: this.state.username,
+                    timeStamp: timeStamp,
+                    sessionKey: this.state.token,
+                    userSecret: this.state.userSecret
+                })}}, timeStamp)
+
+        if (result.status !== true) {
+            console.log("Failed to log in to pool");
+            store.dispatch('showCommonNotification', {text: 'Error logging to pool.', type: 'error'}).catch(console.error)
+            return
+        }
+
+        this.commit('setPool', payload.poolId)
+    }
 }
 
 export const UserData = new Module({
