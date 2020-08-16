@@ -226,7 +226,13 @@ func (db *MongoMainDataStorage) CreateChat(newChat structs.ChatWithMessages) (st
 	newMessagePoolId := fmt.Sprintf("%x", md5.Sum([]byte(time.Now().String()+strconv.Itoa(rand.Int())+strings.Join(newChat.Usernames, "hi!"))))
 	newChat.MessagePoolId = newMessagePoolId
 
-	chatData := structs.Chat{MessagePoolId: newMessagePoolId, ChatId: newChat.ChatId, Admin: newChat.Admin, Usernames: newChat.Usernames, Name: newChat.Name, LastReadMessageId: newChat.LastReadMessageId}
+	chatData := structs.Chat{MessagePoolId: newMessagePoolId,
+		ChatId:            newChat.ChatId,
+		Admin:             newChat.Admin,
+		Usernames:         newChat.Usernames,
+		Name:              newChat.Name,
+		LastReadMessageId: newChat.LastReadMessageId,
+		StorePeriod:       30}
 	res, err := chatsCollection.InsertOne(context.TODO(), chatData)
 	if err != nil {
 		log.Error("Error inserting chat to mongo: ", err)
@@ -342,6 +348,26 @@ func (db *MongoMainDataStorage) EditChatName(chat structs.Chat) bool {
 	_, err = chatsCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		log.Error("Error updating chats collection: ", err)
+		return false
+	}
+	return true
+}
+
+func (db *MongoMainDataStorage) EditChatStorePeriod(chat structs.Chat) bool {
+	database := db.client.Database(usersDb)
+	chatsCollection := database.Collection(chatsDataCollection)
+
+	objectId, err := primitive.ObjectIDFromHex(chat.ChatId)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided chat id: %v", err, chat)
+		return false
+	}
+	filter := bson.D{{"_id", objectId}}
+	update := bson.D{{"$set", bson.D{{"store_period", chat.StorePeriod}}}}
+
+	_, err = chatsCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Error("Error updating chats collection (store period): ", err)
 		return false
 	}
 	return true

@@ -5,6 +5,7 @@
             <v-row align-content="center" class="fill-height">
                 <v-col align-self="center" class="d-flex fill-height flex-column justify-space-between align-center">
                     <v-card class="w-auto h-100 default-dark-db" color="#f6f6f6" elevation="0">
+                        <CommonNotification></CommonNotification>
                         <v-card-title class="mt-4 d-flex flex-row justify-center">
                             <h2>
                                 Welcome back!
@@ -42,7 +43,7 @@
                             </v-btn>
                         </v-card-actions>
                     </v-card>
-                    <v-banner class="mb-10">
+                    <v-banner class="mb-12">
                         {{isLogin ? 'Don\'t have an account yet?' : 'Already have an account?'}}
                         <v-btn text @click="isLogin = !isLogin">
                             {{isLogin ? 'Sign up' : 'Sign in'}}
@@ -58,11 +59,12 @@
     import LoginAppBar from "./subcomponents/LoginAppBar.vue";
     import {store} from "@/store";
     import router from '@/router';
+    import CommonNotification from "@/components/CommonNotification.vue";
     import Vue from 'vue';
 
     export default Vue.extend( {
         name: "Login",
-        components: {LoginAppBar},
+        components: {LoginAppBar, CommonNotification},
         data: () => {
             return {
                 login: '',

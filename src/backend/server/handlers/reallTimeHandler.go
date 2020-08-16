@@ -25,6 +25,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func ChatSocketHandler(w http.ResponseWriter, r *http.Request) {
+	log.Info("Starting ws connection")
 	id, ok := utils.IdentifyWebSocketRequest(r)
 	if !ok {
 		utils.SendFailResponse(w, "Unauthorized request")
@@ -48,4 +49,5 @@ func ChatSocketHandler(w http.ResponseWriter, r *http.Request) {
 	clientStruct.SubscribeToDBEvents()
 	go clientStruct.ReadHub()
 	go clientStruct.WriteHub()
+	log.Infof("Web socket connection for user %v established.", user)
 }

@@ -20,6 +20,8 @@ import (
 const (
 	userDataTable  = "ws_chat.users"
 	poolsDataTable = "ws_chat.pools"
+
+	filesInfoTable = "file_server.files_info"
 	hashCost       = 14
 )
 
@@ -81,6 +83,24 @@ func (db *PgSqlUserKeysManager) InitTables() {
             primary key,
     pool_id       varchar(255)  not null,
     password      varchar(255)  not null
+)`
+	if _, err := db.connection.Exec(query); err != nil {
+		log.Fatal("Error creating table: ", err)
+	}
+
+	query = `create schema if not exists ` + strings.Split(filesInfoTable, ".")[0]
+	if _, err := db.connection.Exec(query); err != nil {
+		log.Fatal("Error creating table: ", err)
+	}
+
+	query = `create table if not exists ` + filesInfoTable + `
+(
+    lot_id            serial       not null
+        constraint pools_pk
+            primary key,
+    file_id       varchar(255)  not null,
+    save_token      varchar(255)  not null,
+    view_tokens      varchar(255)[]  not null
 )`
 	if _, err := db.connection.Exec(query); err != nil {
 		log.Fatal("Error creating table: ", err)

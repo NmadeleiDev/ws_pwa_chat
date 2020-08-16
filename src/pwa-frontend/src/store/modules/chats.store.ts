@@ -1,6 +1,5 @@
 import { Getters, Mutations, Actions, Module } from 'vuex-smart-module'
 import api from "@/api/api";
-import keysGenerator from '@/keys/keysGenerator'
 import {Chat, Message, User} from "@/interfaces/main";
 import {store} from '@/store';
 // @ts-ignore
@@ -10,7 +9,7 @@ import md5 from 'md5';
 class ChatsState {
     isNew: boolean = false
     chats: Array<Chat> = []
-    currentChat: Chat = {id: '', admin: '', name: '', usernames: [], messages: []}
+    currentChat: Chat = {id: '', admin: '', name: '', usernames: [], messages: [], storePeriod: 24}
 
     generateMessageId = function () {
         return md5(Date.now() + Math.random())
@@ -36,7 +35,7 @@ class ChatsGetters extends Getters<ChatsState> {
     getChatById(chatId: string): Chat {
         const data = this.state.chats.find(item => item.id === chatId)
         if (data === undefined) {
-            return <Chat>{id: "", name: "Chat", messages: [], usernames: [store.getters.username()], admin: store.getters.username()}
+            return <Chat>{id: "", name: "Chat", messages: [], usernames: [store.getters.username()], admin: store.getters.username(), storePeriod: 24}
         } else {
             return data
         }
@@ -130,6 +129,10 @@ class ChatsMutations extends Mutations<ChatsState> {
     setMessageState(payload: {message: Message, state: number}) {
         payload.message.state = payload.state
     }
+
+    setCurrentChatStorePeriod(payload: number) {
+        this.state.currentChat.storePeriod = payload;
+    }
 }
 
 class ChatsActions extends Actions<
@@ -150,30 +153,54 @@ class ChatsActions extends Actions<
         }
 
         if (this.state.isNew) {
-            const timeStamp: string = Date.now().toString()
-
             this.commit('addMessageToCurrentChat', message)
 
-            let result = await api.post("chat", {data: this.state.currentChat, auth: {username: store.getters.username(), token: store.getters.getNewToken(timeStamp)}}, timeStamp)
-            if (result.status !== true) {
-                console.log("Failed to send init message! Failed to create chat!")
-                return
+            let newChat = this.getters.getCurrentChat()
+            if (newChat !== undefined) {
+                try {
+                    newChat = await this.dispatch('createChat', newChat as Chat)
+                } catch (e) {
+                    console.log('Error creating chat: ', e)
+                    store.dispatch('showCommonNotification', {text: 'Error creating chat.', type: 'error'}).catch(console.error)
+                    return
+                }
+                this.commit('setCurrentChat', newChat as Chat)
+                this.commit('setNewValue', false);
+            } else {
+                console.log('Current chat not found, wtf?')
+                store.dispatch('showCommonNotification', {text: 'Error creating chat.', type: 'error'}).catch(console.error)
             }
-            const newChat: Chat =  {
-                id: result.data.id,
-                admin: result.data.admin,
-                name: result.data.name,
-                usernames: result.data.usernames,
-                messages: [message] as Array<Message>
-            }
-            this.commit('addChat', newChat)
-            this.commit('setCurrentChat', newChat)
-            this.commit('setNewValue', false);
         } else {
-            await store.dispatch('sendSocketMessage', {type: 1, message: message})
+            try {
+                await store.dispatch('sendSocketMessage', {type: 1, message: message})
+            } catch (e) {
+                console.log('Error sending message: ', e)
+                store.dispatch('showCommonNotification', {text: 'Error sending message.', type: 'error'}).catch(console.error)
+            }
         }
 
         this.commit('addMessageToItsChat', message)
+    }
+
+    async createChat(payload: Chat): Promise<Chat> {
+        const timeStamp: string = Date.now().toString()
+
+        let result = await api.post("chat", {data: payload, auth: {username: store.getters.username(), token: store.getters.getNewToken(timeStamp)}}, timeStamp)
+        if (result.status !== true) {
+            console.log("Failed to send init message! Failed to create chat!")
+            store.dispatch('showCommonNotification', {text: 'Chat is not created, please, try again.', type: 'error'}).catch(console.error)
+            return payload
+        }
+        const newChat: Chat =  {
+            id: result.data.id,
+            admin: result.data.admin,
+            name: result.data.name,
+            usernames: result.data.usernames,
+            messages: payload.messages as Array<Message>,
+            storePeriod: 24,
+        }
+        this.commit('addChat', newChat)
+        return newChat;
     }
 
     async setCurrentChat(payload: {data: Chat | User, isNew: boolean}) {
@@ -185,6 +212,7 @@ class ChatsActions extends Actions<
                 usernames: [store.getters.username(), user.username],
                 admin: store.getters.username(),
                 messages: [],
+                storePeriod: 24
             }
             this.commit('setNewValue', true);
             this.commit('setCurrentChat', chat);
@@ -251,6 +279,29 @@ class ChatsActions extends Actions<
 
     setCurrentChatId(id: string) {
         this.commit('setCurrentChatId', id)
+    }
+
+    async setCurrentChatStorePeriod(period: number) {
+        const timeStamp: string = Date.now().toString()
+        const currentChat = this.getters.getCurrentChat()
+        if (currentChat === undefined) {
+            console.log("Modifying undef chat")
+            return
+        }
+
+        const result = await api.post("period", {auth: {
+                username: store.getters.username(),
+                token: store.getters.getNewToken(timeStamp)
+            }, data: {
+                id: currentChat.id,
+                name: currentChat.name,
+                storePeriod: period
+            }}, timeStamp)
+        if (result.status !== true) {
+            console.log("Error save period: ", result.data)
+            return false
+        }
+        this.commit('setCurrentChatStorePeriod', period);
     }
 
 }

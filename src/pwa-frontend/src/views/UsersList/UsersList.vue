@@ -4,6 +4,7 @@
         <v-main>
             <v-row>
                 <v-col>
+                    <CommonNotification></CommonNotification>
                     <v-list shaped v-if="users.length > 1">
                         <v-subheader>Users</v-subheader>
                         <v-text-field class="ml-2 mr-2" placeholder="Find user" v-model="filter"></v-text-field>
@@ -36,13 +37,15 @@
 
 <script lang="ts">
     import Vue from "vue";
+    import CommonNotification from "@/components/CommonNotification.vue";
     import {User} from "@/interfaces/main";
     import DefaultAppBar from "@/components/DefaultAppBar.vue";
 
     export default Vue.extend({
         name: "UsersList",
         components: {
-            DefaultAppBar
+            DefaultAppBar,
+            CommonNotification
         },
         data: () => {
             return {
