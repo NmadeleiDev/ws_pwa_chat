@@ -10,7 +10,7 @@
                         <v-text-field class="ml-2 mr-2" placeholder="Find user" v-model="filter"></v-text-field>
                         <v-list-item-group color="primary">
                             <v-list-item
-                                    v-for="(user, i) in users.filter(item => item.username.includes(filter) && (item.username !== username))"
+                                    v-for="(user, i) in users.filter(item => item.username.includes(filter) && (!existingPersonalChats.includes(item.username)))"
                                     :key="i"
                                     @click="setChat(user)"
                             >
@@ -38,7 +38,7 @@
 <script lang="ts">
     import Vue from "vue";
     import CommonNotification from "@/components/CommonNotification.vue";
-    import {User} from "@/interfaces/main";
+    import {Chat, User} from "@/interfaces/main";
     import DefaultAppBar from "@/components/DefaultAppBar.vue";
 
     export default Vue.extend({
@@ -69,6 +69,16 @@
             },
             username(): string {
                 return this.$store.getters.username()
+            },
+            existingPersonalChats(): Array<string> {
+                return this.$store.getters.getAllChats().reduce(
+                    (acc: Array<string>, curr: Chat) => {
+                        if (curr.usernames.length === 2) {
+                            return acc.concat(curr.usernames)
+                        }
+                        return acc
+                    }, [] as Array<string>
+                )
             }
         }
     })
