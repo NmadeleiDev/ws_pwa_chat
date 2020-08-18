@@ -25,8 +25,13 @@
                         </v-list-item-group>
                     </v-list>
 
-                    <v-sheet v-else class="mt-8 d-flex flex-column justify-space-around align-center">
+                    <v-sheet v-else-if="users.length === 0" class="mt-8 d-flex flex-column justify-space-around align-center">
                         <h3>Looks like you are the only user yet!</h3>
+                        <v-subheader>Try refreshing page :)</v-subheader>
+                    </v-sheet>
+
+                    <v-sheet v-else class="mt-8 d-flex flex-column justify-space-around align-center">
+                        <h3>You already have active chats with all the users!</h3>
                         <v-subheader>Try refreshing page :)</v-subheader>
                     </v-sheet>
                 </v-col>
