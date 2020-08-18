@@ -141,6 +141,7 @@ class ChatsActions extends Actions<
     ChatsMutations,
     ChatsActions
     > {
+
     async sendMessageInChat(payload: string) {
         const message: Message = {
             id: this.state.generateMessageId(),
@@ -239,6 +240,7 @@ class ChatsActions extends Actions<
                 return
             }
             chat.messages = !result.data ? [] : <Array<Message>>result.data
+            chat.messages.forEach(item => item.chatId = chat.id)
         }))
         this.commit('setChats', payload)
         this.commit('sortChats')

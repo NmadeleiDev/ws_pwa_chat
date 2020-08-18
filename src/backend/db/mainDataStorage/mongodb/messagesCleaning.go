@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-func (db *MongoMainDataStorage) StartCleaningMessages() {
+func (db *MongoMainDataStorage) StartCleaningMessages(period time.Duration) {
 
 	database := db.client.Database(usersDb)
 	collection := database.Collection(chatsDataCollection)
 
 	for {
-		time.Sleep(time.Minute * 3)
+		time.Sleep(period)
 		var container structs.Chat
 		optsFind := options.Find()
 		cursor, err := collection.Find(context.TODO(), bson.D{}, optsFind)
