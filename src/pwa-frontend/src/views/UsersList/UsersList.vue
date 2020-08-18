@@ -5,12 +5,12 @@
             <v-row>
                 <v-col>
                     <CommonNotification></CommonNotification>
-                    <v-list shaped v-if="users.length > 1">
+                    <v-list shaped v-if="usersToShow.length > 1">
                         <v-subheader>Users</v-subheader>
                         <v-text-field class="ml-2 mr-2" placeholder="Find user" v-model="filter"></v-text-field>
                         <v-list-item-group color="primary">
                             <v-list-item
-                                    v-for="(user, i) in users.filter(item => item.username.includes(filter) && (!existingPersonalChats.includes(item.username)))"
+                                    v-for="(user, i) in usersToShow"
                                     :key="i"
                                     @click="setChat(user)"
                             >
@@ -79,6 +79,9 @@
                         return acc
                     }, [] as Array<string>
                 )
+            },
+            usersToShow() {
+                return this.$store.getters.allUsers().filter((item: User) => item.username.includes(this.filter) && (!this.existingPersonalChats.includes(item.username)))
             }
         }
     })
