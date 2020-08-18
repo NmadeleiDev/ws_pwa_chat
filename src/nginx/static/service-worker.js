@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.225a5164d9a9d9ab0d7d4c0744a5a05b.js"
+  "/precache-manifest.fbd3284166ea991a70e886331412b92b.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "enchat"});

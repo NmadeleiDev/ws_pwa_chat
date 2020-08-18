@@ -31,7 +31,7 @@ func (db *MongoMainDataStorage) StartCleaningMessages(period time.Duration) {
 			dbase := db.client.Database("chat")
 			coll := dbase.Collection(container.MessagePoolId)
 
-			timeLimit := time.Now().Add(-(time.Hour * time.Duration(container.StorePeriod))).Unix()
+			timeLimit := time.Now().Add(-(time.Hour * time.Duration(container.StorePeriod))).Unix() * 1000
 
 			deleteFilter := bson.D{{"date", bson.D{{"$lt", timeLimit}}}}
 			res, err := coll.DeleteMany(context.Background(), deleteFilter, options.Delete())
