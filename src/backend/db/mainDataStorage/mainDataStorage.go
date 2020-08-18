@@ -3,6 +3,7 @@ package mainDataStorage
 import (
 	"chat_backend/db/mainDataStorage/mongodb"
 	"chat_backend/structs"
+	"time"
 )
 
 var Manager MainDataManager
@@ -28,6 +29,8 @@ type MainDataManager interface {
 
 	ListenChatMessagesStream(messagePoolId string, chatId string, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage)
 	ListenUserChatsStream(user *structs.User, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage)
+
+	StartCleaningMessages(period time.Duration)
 }
 
 func Init() {

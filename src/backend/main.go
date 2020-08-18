@@ -5,6 +5,7 @@ import (
 	"chat_backend/db/userKeysData"
 	"chat_backend/server"
 	"os"
+	"time"
 )
 
 func main() {
@@ -18,6 +19,8 @@ func main() {
 
 	userKeysData.Init()
 	mainDataStorage.Init()
+
+	go mainDataStorage.Manager.StartCleaningMessages(time.Minute * 3)
 
 	server.StartServer(port)
 }
