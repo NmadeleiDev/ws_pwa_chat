@@ -222,7 +222,7 @@ class ChatsActions extends Actions<
             this.commit('setCurrentChat', chat);
             this.commit('setNewValue', false);
             chat.messages.forEach(message => {
-                if (message.sender !== store.getters.username() && message.state !== 3) {
+                if (message.sender !== store.getters.username() && message.state < 3) {
                     this.commit('setMessageState', {message: message, state: 3})
                     store.dispatch('sendSocketMessage', {type: 2, message: message})
                 }

@@ -95,8 +95,8 @@ class WebSocketActions extends Actions<
             let message: Message = data.data as Message
             store.commit('addMessageToItsChat', message)
             if (message.sender !== store.getters.username() && message.state < 3) {
-                message.state = 3
-                this.dispatch('sendSocketMessage', {type: 2, message: message})
+                // message.state = 3
+                // this.dispatch('sendSocketMessage', {type: 2, message: message})
                 this.dispatch('notifyUser', data)
             }
         } else if (data.type === ChatType) {
