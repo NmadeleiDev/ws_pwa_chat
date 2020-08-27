@@ -25,16 +25,18 @@ type FileInfoManager struct {
 	connection *sql.DB
 }
 
-func (db *FileInfoManager) TrySaveFileIdToLot(fileId, lotId, lotToken string) bool {
+func (db *FileInfoManager) TrySaveFileIdToLot(fileInfo types.ClientFileInfo) bool {
 	query := `
 UPDATE ` + filesInfoTable + `
-SET file_id=$1, save_token=$2
-WHERE lot_id=$3 AND save_token=$4`
+SET file_id=$1, file_status=1, content_type=$2, file_size=%3
+WHERE lot_id=$4 AND file_status=0`
 // затираем lot_token мусором сразу после сохранения файла. Таким образом, после этой операции, к нему уже ни у кого не будет доступа, пока главный сервер не поставит туда какой - нибудь новый токен, и не сообщит его авторизованному пользователю
 
-	trashToken := utils.GenSha1(strconv.Itoa(rand.Int()) + "junk" + strconv.Itoa(time.Now().Nanosecond()))
-
-	if _, err := db.connection.Exec(query, fileId, trashToken, lotId, lotToken); err != nil {
+	if _, err := db.connection.Exec(query,
+		fileInfo.Id,
+		fileInfo.ContentType,
+		fileInfo.Size,
+		fileInfo.LotId); err != nil {
 		log.Errorf("Error saving file info: %v", err)
 		return false
 	}
