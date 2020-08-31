@@ -23,10 +23,14 @@ export default Vue.extend({
 body {
   margin: 0;
   padding: 0;
+  max-height: 100vh;
+  height: 100vh;
 }
 
 html {
   width: 100%;
+  max-height: 100vh;
+  height: 100vh;
   margin: 0;
   padding: 0;
 }

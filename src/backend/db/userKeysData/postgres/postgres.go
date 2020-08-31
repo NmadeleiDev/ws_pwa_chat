@@ -46,7 +46,7 @@ func (db *PgSqlUserKeysManager) MakeConnection() {
 
 func (db *PgSqlUserKeysManager) CloseConnection() {
 	if err := db.connection.Close(); err != nil {
-		log.Error("Error closing postgres connection: ", err)
+		log.Error("Error closing fileInfoManager connection: ", err)
 	}
 }
 
@@ -98,9 +98,12 @@ func (db *PgSqlUserKeysManager) InitTables() {
     lot_id            serial       not null
         constraint pools_pk
             primary key,
-    file_id       varchar(255)  not null,
-    save_token      varchar(255)  not null,
-    view_tokens      varchar(255)[]  not null
+    file_id       varchar(255)  default null,
+	chat_id			varchar(255)  not null,
+    view_tokens      varchar(255)[]  not null default ARRAY[]::varchar(255)[],
+	lot_status		integer			default 0,
+	content_type	varchar(64) default null,
+	file_size		integer			default 0
 )`
 	if _, err := db.connection.Exec(query); err != nil {
 		log.Fatal("Error creating table: ", err)
@@ -322,4 +325,61 @@ WHERE username=$1`
 		return "", false
 	}
 	return id, true
+}
+
+func (db *PgSqlUserKeysManager) GetUserNameById(id string) (string, bool) {
+	var name string
+
+	query := `
+SELECT username
+FROM ` + userDataTable + `
+WHERE id=$1`
+
+	row := db.connection.QueryRow(query, id)
+	if err := row.Scan(&name); err != nil {
+		log.Error("Error getting pool password: ", err)
+		return "", false
+	}
+	return name, true
+}
+
+func (db *PgSqlUserKeysManager) CreateFileLot(chatId string) int64 {
+	query := `
+INSERT INTO ` + filesInfoTable + ` 
+(chat_id) VALUES ($1) RETURNING lot_id`
+
+	var id int64
+
+	if err := db.connection.QueryRow(query, chatId).Scan(&id); err != nil {
+		log.Errorf("Error creating file lot: %v", err)
+		return -1
+	}
+	return id
+}
+
+func (db *PgSqlUserKeysManager) GetFileLotChatId(lotId string) string {
+	query := `
+SELECT chat_id FROM ` + filesInfoTable + ` 
+WHERE lot_id=$1`
+
+	var id string
+
+	if err := db.connection.QueryRow(query, lotId).Scan(&id); err != nil {
+		log.Errorf("Error creating file lot: %v", err)
+		return ""
+	}
+	return id
+}
+
+func (db *PgSqlUserKeysManager) AddViewKeyToFileLot(lotId, key string) bool {
+	query := `
+UPDATE ` + filesInfoTable + ` 
+SET view_tokens = array_append(view_tokens, $2)
+WHERE lot_id=$1`
+
+	if _, err := db.connection.Exec(query, lotId, key); err != nil {
+		log.Errorf("Error creating file lot: %v", err)
+		return false
+	}
+	return true
 }

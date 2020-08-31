@@ -17,7 +17,18 @@ module.exports = {
         "pathRewrite": {
           "^/api/v1": ""
         },
-        "target": "http://localhost:2222",
+        "target": "http://localhost:2223",
+        "changeOrigin": true,
+        "overlay": {
+          "warnings": true,
+          "errors": true
+        }
+      },
+      "/api/media": {
+        "pathRewrite": {
+          "^/api/media": ""
+        },
+        "target": "http://localhost:2224",
         "changeOrigin": true,
         "overlay": {
           "warnings": true,

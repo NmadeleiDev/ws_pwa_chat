@@ -26,6 +26,7 @@ type MainDataManager interface {
 	EditChatName(chat structs.Chat) bool
 	EditChatStorePeriod(chat structs.Chat) bool
 	UpdateLastReadMessageId(message structs.Message, username string) bool
+	CheckIfUserIsInChat(chatId, userId string) bool
 
 	ListenChatMessagesStream(messagePoolId string, chatId string, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage)
 	ListenUserChatsStream(user *structs.User, clientExitChan chan byte, writeUpdatesChan chan structs.SocketMessage)

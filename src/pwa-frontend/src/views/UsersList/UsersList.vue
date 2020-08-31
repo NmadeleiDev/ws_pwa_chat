@@ -2,8 +2,7 @@
     <v-app>
         <DefaultAppBar name="Find users"></DefaultAppBar>
         <v-main>
-            <v-row>
-                <v-col>
+            <v-container fluid>
                     <CommonNotification></CommonNotification>
                     <v-list shaped v-if="usersToShow.length > 1">
                         <v-subheader>Users</v-subheader>
@@ -34,8 +33,7 @@
                         <h3>You already have active chats with all the users!</h3>
                         <v-subheader>Try refreshing page :)</v-subheader>
                     </v-sheet>
-                </v-col>
-            </v-row>
+            </v-container>
         </v-main>
     </v-app>
 </template>

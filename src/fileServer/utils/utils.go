@@ -16,5 +16,5 @@ func GenSha1(input string) string {
 	if _, err := io.WriteString(h, input); err != nil {
 		logrus.Errorf("Error hashing %v string: %v", input, err)
 	}
-	return fmt.Sprintf("% x", h.Sum(nil))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

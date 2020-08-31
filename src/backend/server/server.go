@@ -8,7 +8,6 @@ import (
 )
 
 func StartServer(port string) {
-
 	router := mux.NewRouter()
 
 	// user account handlers
@@ -27,6 +26,9 @@ func StartServer(port string) {
 	router.HandleFunc("/leave", handlers.LeaveChatHandler)
 	router.HandleFunc("/messages", handlers.GetChatMessagesHandler)
 	router.HandleFunc("/last", handlers.UpdateLastReadMessageHandler)
+
+	// files handling
+	router.HandleFunc("/file", handlers.RequestFileHandler)
 
 	//router.HandleFunc("/pool_join", handlers.JoinUserToPool)
 	router.HandleFunc("/pool", handlers.ManagePoolHandler)

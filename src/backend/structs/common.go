@@ -22,14 +22,14 @@ type Chat struct {
 }
 
 type Message struct {
-	Id               string `json:"id" bson:"id"`
-	Sender           string `json:"sender" bson:"sender"`
-	ChatId           string `json:"chatId" bson:"-"`
-	Date             int    `json:"date" bson:"date"`
-	State            int    `json:"state" bson:"state"`
-	Text             string `json:"text" bson:"text"`
-	Meta             int    `json:"meta" bson:"-"`
-	AttachedFilePath string `json:"attachedFilePath" bson:"attachedfilepath"`
+	Id              string   `json:"id" bson:"id"`
+	Sender          string   `json:"sender" bson:"sender"`
+	ChatId          string   `json:"chatId" bson:"-"`
+	Date            int      `json:"date" bson:"date"`
+	State           int      `json:"state" bson:"state"`
+	Text            string   `json:"text" bson:"text"`
+	Meta            int      `json:"meta" bson:"-"`
+	AttachedFileIds []string `json:"attachedFileIds" bson:"attached_file_ids"`
 }
 
 type Pool struct {

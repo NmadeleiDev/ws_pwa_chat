@@ -10,11 +10,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
+)
+
+const (
+	bucket = "enchat-files"
+	downloadDir = "files_download"
+	uploadDir = "files_upload"
 )
 
 var Manager types.S3Manager
@@ -24,13 +31,13 @@ type manager struct {
 	client *s3.S3
 }
 
-func (m *manager) UploadFile(filepath string) bool {
+func (m *manager) UploadFile(filepath string) (string, bool) {
 	uploader := s3manager.NewUploader(m.sess)
 
 	f, err  := os.Open(filepath)
 	if err != nil {
 		logrus.Errorf("failed to open file %q, %v", filepath, err)
-		return false
+		return "", false
 	}
 
 	genKey := utils.GenSha1(time.Now().String() + strconv.Itoa(rand.Int()) + filepath)
@@ -42,21 +49,19 @@ func (m *manager) UploadFile(filepath string) bool {
 	})
 	if err != nil {
 		logrus.Errorf("failed to upload file, %v", err)
-		return false
+		return "", false
 	}
-	fmt.Printf("file uploaded to, %s\n", aws.StringValue(&result.Location))
-	return true
+	logrus.Infof("file uploaded to, %s\n", aws.StringValue(&result.Location))
+	return genKey, true
 }
 
-func (m *manager) DownloadFile(fileId string) bool {
+func (m *manager) DownloadFile(fileId string) (*os.File, error) {
 	downloader := s3manager.NewDownloader(m.sess)
 
-	filename := "saved_sample.txt"
-
-	f, err := os.Create(filename)
+	f, err := ioutil.TempFile(downloadDir, "")
 	if err != nil {
-		logrus.Errorf("failed to create file %q, %v", filename, err)
-		return false
+		logrus.Errorf("failed to create file %v", err)
+		return nil, err
 	}
 
 	n, err := downloader.Download(f, &s3.GetObjectInput{
@@ -65,15 +70,17 @@ func (m *manager) DownloadFile(fileId string) bool {
 	})
 	if err != nil {
 		logrus.Errorf("failed to download file, %v", err)
-		return false
+		return nil, err
 	}
 	fmt.Printf("file downloaded, %d bytes\n", n)
-	return true
+	return f, nil
 }
 
-func (m *manager) Init() {
+func Init() {
 	var err error
 	yes := true
+
+	m := manager{}
 
 	m.sess, err = session.NewSession(&aws.Config{
 		Region: aws.String("us-east-2"),
@@ -88,5 +95,23 @@ func (m *manager) Init() {
 
 	m.client = s3.New(m.sess)
 
-	Manager = &manager{}
+	Manager = &m
+
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2")},
+	)
+
+	// Create S3 service client
+	svc := s3.New(sess)
+	result, err := svc.ListBuckets(nil)
+	if err != nil {
+		logrus.Errorf("Unable to list buckets, %v", err)
+	}
+
+	fmt.Println("Buckets:")
+
+	for _, b := range result.Buckets {
+		fmt.Printf("* %s created on %s\n",
+			aws.StringValue(b.Name), aws.TimeValue(b.CreationDate))
+	}
 }

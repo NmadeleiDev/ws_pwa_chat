@@ -24,7 +24,7 @@ dev:
 
 up-dev: up front-dev
 
-git-prep: backend-fmt backend-vendor
+git-prep: backend-fmt backend-vendor front-build
 	git add * .env.example .env.release
 
 backend-fmt:

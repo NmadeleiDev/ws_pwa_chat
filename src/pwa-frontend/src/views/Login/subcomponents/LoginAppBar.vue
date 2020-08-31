@@ -1,5 +1,5 @@
 <template>
-    <v-app-bar
+    <v-app-bar app
             color="accent-4"
             dark
     >
