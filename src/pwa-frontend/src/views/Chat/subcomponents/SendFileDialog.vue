@@ -17,7 +17,7 @@
             </v-card-title>
 
             <v-card-text class="fill-width d-flex flex-column justify-space-around align-center">
-                <div>Files: {{files}}</div>
+<!--                <div>Files: {{files}}</div>-->
                 <v-file-input v-model="files"
                               prepend-icon="mail"
                               class="fill-width"
