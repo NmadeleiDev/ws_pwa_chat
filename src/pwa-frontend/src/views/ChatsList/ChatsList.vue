@@ -1,9 +1,8 @@
 <template>
-    <v-app>
+    <div>
         <DefaultAppBar :name="'Hi, ' + username"></DefaultAppBar>
         <v-main>
-            <v-row>
-                <v-col>
+            <v-container fluid>
                     <CommonNotification></CommonNotification>
                     <v-list outlined shaped v-if="chats.length > 0" class="mt-0">
                     <v-subheader class="mt-0 text-lg-h4">Chats</v-subheader>
@@ -21,6 +20,7 @@
                         <v-list-item-content>
                             <v-list-item-title class="mb-1 d-flex flex-row justify-space-between align-start">
                                 <h4 class="height-auto">{{ chat.name }}</h4>
+                                <p>{{'(' + chat.usernames.join(', ') + ')'}}</p>
                                 <v-chip v-if="getNumberOfUnread(chat)" class="height-auto">{{getNumberOfUnread(chat)}}</v-chip>
                             </v-list-item-title>
                             <v-list-item-subtitle class="d-flex flex-row justify-space-between align-start">
@@ -38,10 +38,9 @@
                         <v-subheader>or</v-subheader>
                         <CreateChatDialog></CreateChatDialog>
                     </v-sheet>
-                </v-col>
-            </v-row>
+            </v-container>
         </v-main>
-    </v-app>
+    </div>
 </template>
 
 <script lang="ts">
@@ -76,7 +75,7 @@
                 }
             },
             getNumberOfUnread(chat: Chat): string {
-                const num = chat.messages.filter(item => item.state !== 3).length
+                const num = chat.messages.filter(item => (item.state !== 3 && item.sender !== this.username)).length
                 if (num > 0) {
                     return num.toString()
                 } else {

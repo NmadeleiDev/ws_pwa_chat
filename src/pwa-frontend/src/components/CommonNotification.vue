@@ -1,5 +1,5 @@
 <template>
-    <v-alert dismissible :value="show" :type="type" class="ml-3 mr-3">
+    <v-alert dismissible dense :value="show" :type="type" class="ml-3 mr-3">
         {{text}}
     </v-alert>
 </template>

@@ -35,6 +35,11 @@ type UserKeysData interface {
 	UpdateSessionKey(old, new string) bool
 
 	GetUserIdByName(name string) (string, bool)
+	GetUserNameById(id string) (string, bool)
+
+	CreateFileLot(chatId string) int64
+	GetFileLotChatId(lotId string) string
+	AddViewKeyToFileLot(lotId, key string) bool
 }
 
 func Init() {

@@ -1,16 +1,15 @@
 package types
 
-type S3Manager interface {
-	Init()
+import "os"
 
-	UploadFile(filepath string) bool
-	DownloadFile(fileId string) bool
+type S3Manager interface {
+	UploadFile(filepath string) (string, bool)
+	DownloadFile(fileId string) (*os.File, error)
 }
 
 type FileInfoStorage interface {
-	MakeConnection()
 	CloseConnection()
 
-	TrySaveFileIdToLot(fileId, lotId, lotToken string) bool
-	GetFileIdFromLot(lotId, viewToken string) string
+	TrySaveFileIdToLot(fileInfo ClientFileInfo) bool
+	GetFileInfoFromLot(lotId, viewToken string) *ClientFileInfo
 }

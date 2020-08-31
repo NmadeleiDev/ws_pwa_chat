@@ -395,6 +395,28 @@ func (db *MongoMainDataStorage) UpdateLastReadMessageId(message structs.Message,
 	return true
 }
 
+func (db *MongoMainDataStorage) CheckIfUserIsInChat(chatId, userId string) bool {
+	database := db.client.Database(usersDb)
+	chatsCollection := database.Collection(chatsDataCollection)
+
+	objectId, err := primitive.ObjectIDFromHex(chatId)
+	if err != nil {
+		log.Error("Error creating object id: %v; provided chat id: %v", err, chatId)
+		return false
+	}
+	filter :=
+		bson.D{{"$and",
+			bson.A{bson.D{{"_id", objectId}},
+				bson.D{{"usernames", userId}}}}}
+
+	count, err := chatsCollection.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		log.Error("Error updating chats collection (store period): ", err)
+		return false
+	}
+	return count > 0
+}
+
 func (db *MongoMainDataStorage) CloseConnection() {
 	if err := db.client.Disconnect(context.TODO()); err != nil {
 		log.Error("Error disconnect mongo: ", err)

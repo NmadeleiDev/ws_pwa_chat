@@ -34,11 +34,11 @@ func (db *MongoMainDataStorage) StartCleaningMessages(period time.Duration) {
 			timeLimit := time.Now().Add(-(time.Hour * time.Duration(container.StorePeriod))).Unix() * 1000
 
 			deleteFilter := bson.D{{"date", bson.D{{"$lt", timeLimit}}}}
-			res, err := coll.DeleteMany(context.Background(), deleteFilter, options.Delete())
+			_, err := coll.DeleteMany(context.Background(), deleteFilter, options.Delete())
 			if err != nil {
 				logrus.Errorf("Error deleting old messages: %v", err)
 			}
-			logrus.Infof("Deleted %v messages", res.DeletedCount)
+			//logrus.Infof("Deleted %v messages", res.DeletedCount)
 		}
 	}
 }

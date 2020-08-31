@@ -2,8 +2,7 @@
     <div class="default-dark-db fill-height">
         <LoginAppBar ></LoginAppBar>
         <v-main class="default-dark-db fill-height">
-            <v-row align-content="center" class="fill-height">
-                <v-col align-self="center" class="d-flex fill-height flex-column justify-space-between align-center">
+            <v-container fluid>
                     <v-card class="w-auto h-100 default-dark-db" color="#f6f6f6" elevation="0">
                         <CommonNotification></CommonNotification>
                         <v-card-title class="mt-4 d-flex flex-row justify-center">
@@ -43,15 +42,17 @@
                             </v-btn>
                         </v-card-actions>
                     </v-card>
-                    <v-banner class="mb-12">
-                        {{isLogin ? 'Don\'t have an account yet?' : 'Already have an account?'}}
-                        <v-btn text @click="isLogin = !isLogin">
-                            {{isLogin ? 'Sign up' : 'Sign in'}}
-                        </v-btn>
-                    </v-banner>
-                </v-col>
-            </v-row>
+
+            </v-container>
         </v-main>
+        <v-footer app>
+            <v-banner class="mb-2 d-block ml-auto mr-auto">
+                {{isLogin ? 'Don\'t have an account yet?' : 'Already have an account?'}}
+                <v-btn text @click="isLogin = !isLogin">
+                    {{isLogin ? 'Sign up' : 'Sign in'}}
+                </v-btn>
+            </v-banner>
+        </v-footer>
     </div>
 </template>
 

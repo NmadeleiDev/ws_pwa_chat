@@ -11,6 +11,8 @@ class ChatsState {
     chats: Array<Chat> = []
     currentChat: Chat = {id: '', admin: '', name: '', usernames: [], messages: [], storePeriod: 24}
 
+    loadedFiles: Array<{id: string, file: Blob}> = []
+
     generateMessageId = function () {
         return md5(Date.now() + Math.random())
     }
@@ -22,6 +24,10 @@ class ChatsGetters extends Getters<ChatsState> {
             return this.state.currentChat
         }
         return this.state.chats.find((chat: Chat) => chat.id === this.state.currentChat.id)
+    }
+
+    getLoadedFiles(): Array<{id: string, file: Blob}> {
+        return this.state.loadedFiles
     }
 
     getAllChats(): Array<Chat> {
@@ -52,6 +58,10 @@ class ChatsMutations extends Mutations<ChatsState> {
         })
     }
 
+    addLoadedFile(payload: {id: string, file: Blob}) {
+        this.state.loadedFiles.push(payload)
+    }
+
     setChats(payload: Array<Chat>) {
         this.state.chats.splice(0, this.state.chats.length)
         payload.forEach(chat => {
@@ -72,6 +82,7 @@ class ChatsMutations extends Mutations<ChatsState> {
                 }
             }
         })
+        console.log("Message added: ", payload)
     }
 
     addMessageToCurrentChat(payload: Message) {
@@ -133,6 +144,7 @@ class ChatsMutations extends Mutations<ChatsState> {
     setCurrentChatStorePeriod(payload: number) {
         this.state.currentChat.storePeriod = payload;
     }
+
 }
 
 class ChatsActions extends Actions<
@@ -142,18 +154,19 @@ class ChatsActions extends Actions<
     ChatsActions
     > {
 
-    async sendMessageInChat(payload: string) {
-        const message: Message = {
+    async sendMessageInChat(payload: {message: string, files: Array<Blob> | null}) {
+        let message: Message = {
             id: this.state.generateMessageId(),
             sender: store.getters.username(),
             chatId: this.state.currentChat.id,
             date: Date.now(),
             state: 1,
-            text: payload,
-            attachedFilePath: ''
+            text: payload.message,
+            attachedFileIds: []
         }
 
         if (this.state.isNew) {
+            console.log("Chat is new, creating")
             this.commit('addMessageToCurrentChat', message)
 
             let newChat = this.getters.getCurrentChat()
@@ -171,16 +184,70 @@ class ChatsActions extends Actions<
                 console.log('Current chat not found, wtf?')
                 store.dispatch('showCommonNotification', {text: 'Error creating chat.', type: 'error'}).catch(console.error)
             }
+            this.commit('addMessageToItsChat', message)
         } else {
-            try {
-                await store.dispatch('sendSocketMessage', {type: 1, message: message})
-            } catch (e) {
-                console.log('Error sending message: ', e)
-                store.dispatch('showCommonNotification', {text: 'Error sending message.', type: 'error'}).catch(console.error)
-            }
-        }
+            // отправляем файлы
+            console.log("Sending files: ", payload.files)
+            let asyncLoop = new Promise((resolve, reject) => {
+                if (Array.isArray(payload.files) && payload.files.length > 0) {
+                    let completeCount = 0
+                    payload.files.forEach(file => {
+                        this.dispatch('uploadFile', {file: file, chatId: message.chatId})
+                            .then(id => {
+                                if (id === '') {
+                                    console.log("Error! File id is empty")
+                                    return
+                                }
+                                console.log("File upload succeeded! Id = " + id)
+                                message.attachedFileIds.push(id)
+                                completeCount++
+                                if (!payload.files || completeCount >= payload.files.length) {
+                                    console.log("Completed!")
+                                    resolve()
+                                }
+                            }).catch((e) => reject(e))
+                    })
+                } else
+                    resolve()
+            })
 
-        this.commit('addMessageToItsChat', message)
+            asyncLoop.then(async () => {
+                try {
+                    await store.dispatch('sendSocketMessage', {type: 1, message: message})
+                    this.commit('addMessageToItsChat', message)
+                } catch (e) {
+                    console.log('Error sending message: ', e)
+                    store.dispatch('showCommonNotification', {text: 'Error sending message.', type: 'error'}).catch(console.error)
+                }
+            }).catch(console.warn)
+        }
+    }
+
+    async uploadFile(payload: { file: Blob, chatId: string }): Promise<string> {
+        const timeStamp: string = Date.now().toString()
+
+        let result = await api.post("file", {data: payload.chatId, auth: {username: store.getters.username(), token: store.getters.getNewToken(timeStamp)}}, timeStamp)
+        // lot id может вернуться -1. Это значит, что лот не создался
+        console.log("Lot request: ", result)
+        if (result.status !== true || result.data < 0) {
+            console.log("Failed request to upload")
+            store.dispatch('showCommonNotification', {text: 'Error loading file.', type: 'error'}).catch(console.error)
+            return ''
+        }
+        const formData = new FormData();
+        formData.append('save_key', result.data);
+        formData.append('file', payload.file);
+
+        let res = await api.upload("file", formData)
+        console.log("Upload request: ", res)
+        if (res.status !== true) {
+            console.log("Failed to upload file")
+            store.dispatch('showCommonNotification', {text: 'Error uploading file.', type: 'error'}).catch(console.error)
+            return ''
+        }
+        // здесь сразу закидывать этот файл в loadedFiles
+        this.commit('addLoadedFile', {id: result.data as string, file: payload.file as Blob})
+        return result.data.toString()
     }
 
     async createChat(payload: Chat): Promise<Chat> {
@@ -222,12 +289,37 @@ class ChatsActions extends Actions<
             this.commit('setCurrentChat', chat);
             this.commit('setNewValue', false);
             chat.messages.forEach(message => {
+                // отмечаем прочитанные/не прочитанные
                 if (message.sender !== store.getters.username() && message.state < 3) {
                     this.commit('setMessageState', {message: message, state: 3})
                     store.dispatch('sendSocketMessage', {type: 2, message: message})
                 }
             })
+            // загружаем, если надо, файлы
+            this.dispatch('loadChatImages', chat)
         }
+    }
+
+    async loadChatImages(payload: Chat | undefined) {
+        if (!payload)
+            return
+        payload.messages.forEach(message => {
+            if (Array.isArray(message.attachedFileIds) && message.attachedFileIds.length > 0) {
+                message.attachedFileIds.forEach(async (id) => {
+                    if (this.getters.getLoadedFiles().some(item => item.id === id)) {
+                        return
+                    }
+                    const timeStamp: string = Date.now().toString()
+                    const result = await api.put('file', {data: id, auth: {username: store.getters.username(), token: store.getters.getNewToken(timeStamp)}}, timeStamp)
+                    if (result.status !== true) {
+                        console.log("Error getting view token")
+                        return
+                    }
+                    const res = await api.download('file', {file: id, key: result.data})
+                    this.commit('addLoadedFile', {id: id, file: res as Blob})
+                })
+            }
+        })
     }
 
     async setAllChats(payload: Array<Chat>) {
@@ -281,6 +373,7 @@ class ChatsActions extends Actions<
 
     setCurrentChatId(id: string) {
         this.commit('setCurrentChatId', id)
+        // console.log("Chat: ", this.getters.getCurrentChat())
     }
 
     async setCurrentChatStorePeriod(period: number) {

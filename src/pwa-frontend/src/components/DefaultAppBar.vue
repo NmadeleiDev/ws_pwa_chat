@@ -1,6 +1,5 @@
 <template>
-     <div>
-    <v-app-bar
+    <v-app-bar app
       color="dark accent-4"
       dark
       width="100%"
@@ -55,20 +54,19 @@
           </v-list-item>
         </v-list>
       </v-menu>
-    </v-app-bar>
-       <v-dialog v-model="dialog" fullscreen hide-overlay transition="dialog-bottom-transition">
-         <v-card v-if="currentChat !== undefined">
-           <v-card-title>
-             <v-text-field color="green" v-model="chatName" outlined placeholder="Chat name">
-               <template v-slot:append-outer>
-                 <v-btn @click="saveChatName()">Save</v-btn>
-               </template>
-             </v-text-field>
-           </v-card-title>
+      <v-dialog v-model="dialog" fullscreen hide-overlay transition="dialog-bottom-transition">
+        <v-card v-if="currentChat !== undefined">
+          <v-card-title>
+            <v-text-field color="green" v-model="chatName" outlined placeholder="Chat name">
+              <template v-slot:append-outer>
+                <v-btn @click="saveChatName()">Save</v-btn>
+              </template>
+            </v-text-field>
+          </v-card-title>
           <v-card-text class="d-flex flex-column justify-space-around align-center">
             <div class="d-flex flex-row justify-space-around align-center mb-2">
               <v-text-field type="number"
-              placeholder="Hours to store messages" v-model="hoursToStore"></v-text-field>
+                            placeholder="Hours to store messages" v-model="hoursToStore"></v-text-field>
               <v-btn texr @click="saveStorePeriod()">save</v-btn>
             </div>
             <div class="d-flex flex-row justify-space-around">
@@ -99,12 +97,12 @@
             </div>
 
           </v-card-text>
-           <v-card-actions>
-             <v-btn dark class="d-block ml-auto mr-auto" @click="dialog = false" >Close</v-btn>
-           </v-card-actions>
-         </v-card>
-       </v-dialog>
-  </div>
+          <v-card-actions>
+            <v-btn dark class="d-block ml-auto mr-auto" @click="dialog = false" >Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </v-app-bar>
 </template>
 
 <script lang="ts">
@@ -140,7 +138,7 @@
             this.$store.dispatch('initWebSocket')
           }
 
-          this.hoursToStore = this.currentChat.storePeriod
+          this.hoursToStore = this.currentChat ? this.currentChat.storePeriod : 24;
       },
       methods: {
           requestNotificationsPerm() {
@@ -196,5 +194,10 @@
 </script>
 
 <style scoped>
-
+.app-bar-cont {
+  /*position: fixed;*/
+  /*top: 0;*/
+  /*height: auto;*/
+  /*width: 100%;*/
+}
 </style>

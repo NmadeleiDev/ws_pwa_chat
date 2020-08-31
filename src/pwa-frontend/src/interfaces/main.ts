@@ -19,7 +19,7 @@ export interface Message {
     date: number
     state: number
     text: string
-    attachedFilePath: string
+    attachedFileIds: Array<string>
 }
 
 export interface WebSocketChatMessage {

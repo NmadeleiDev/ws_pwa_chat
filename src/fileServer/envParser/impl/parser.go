@@ -37,7 +37,7 @@ func (p *Parser) IsDevMode() bool {
 }
 
 func (p *Parser) GetServerPort() string {
-	port := os.Getenv("BACKEND_PORT")
+	port := os.Getenv("FILE_BACKEND_PORT")
 	if len(port) == 0 {
 		return ":8080"
 	} else {
