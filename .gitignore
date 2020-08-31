@@ -1,3 +1,5 @@
 .idea
 src/frontend/
 data
+files
+aws_api_key.csv
