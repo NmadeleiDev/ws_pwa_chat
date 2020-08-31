@@ -19,8 +19,8 @@
                         </v-list-item-icon>
                         <v-list-item-content>
                             <v-list-item-title class="mb-1 d-flex flex-row justify-space-between align-start">
-                                <h4 class="height-auto">{{ chat.name }}</h4>
-                                <p>{{'(' + chat.usernames.join(', ') + ')'}}</p>
+                                <h4 class="height-auto">{{ chat.usernames.length <= 2 ? chat.usernames.filter(item => item !== username)[0] : chat.name }}</h4>
+                                <p v-if="chat.usernames.length > 2">{{'(' + chat.usernames.join(', ') + ')'}}</p>
                                 <v-chip v-if="getNumberOfUnread(chat)" class="height-auto">{{getNumberOfUnread(chat)}}</v-chip>
                             </v-list-item-title>
                             <v-list-item-subtitle class="d-flex flex-row justify-space-between align-start">
