@@ -21,6 +21,29 @@ services:
       - mongodb_net
       - docker_net
 
+  file_server:
+    hostname: fileserver
+    container_name: fileserver
+    build:
+      context: ./src/fileServer
+      dockerfile: Dockerfile
+    volumes:
+      - ./files:/go/src/application/files
+    ports:
+      - ${FILE_BACKEND_PORT}:${FILE_BACKEND_PORT}
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      FILE_BACKEND_PORT: ${FILE_BACKEND_PORT}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_PATH: ${S3_BUCKET_PATH}
+    networks:
+      - docker_net
+      - postgres_net
+
   mongodb:
     hostname: mongodb
     image: mongo:4.2.3
@@ -67,6 +90,7 @@ services:
       - docker_net
     links:
       - backend
+      - file_server
     restart: always
 
 networks:
