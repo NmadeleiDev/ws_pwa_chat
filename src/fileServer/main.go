@@ -15,6 +15,5 @@ func main() {
 		fileInfoManager.Manager.CloseConnection()
 	}()
 
-
 	server.Start(envParser.GetParser().GetServerPort())
 }
