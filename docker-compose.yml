@@ -18,7 +18,7 @@ services:
       MONGO_ADDRESS: ${MONGO_ADDRESS}
     networks:
       - postgres_net
-      - mongodb_net
+      - mognodb_mongodb_net
       - docker_net
     restart: always
 
@@ -59,7 +59,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     networks:
-      - mongodb_net
+      - mognodb_mongodb_net
 
   postgres:
     image: postgres:12.3-alpine
@@ -98,7 +98,7 @@ services:
 networks:
   postgres_net:
     external: false
-  mongodb_net:
-    external: false
+  mognodb_mongodb_net:
+    external: true
   docker_net:
     external: false
